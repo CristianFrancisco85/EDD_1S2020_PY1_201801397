@@ -190,7 +190,7 @@ void LinkedList<T>::deleteXNode(int x) {
             this->Iterador = this->Head;
             try {
                 for (int i = 1; i < x; i++) {
-                    if (this->Iterador->getNextNodo() == this->Head) {
+                    if (this->Iterador->getNextNodo() == NULL) {
                         throw -1;
                     } else {
                         this->Iterador = this->Iterador->getNextNodo();
