@@ -132,6 +132,8 @@ void DoubleCircularLinkedList<T>::addEnd(T Value) {
     NewNode->setNodoValue(Value);
     if(this->Head==NULL){
         this->Head=NewNode;
+        this->Head->setNextNodo(NewNode);
+        this->Head->setPrevNodo(NewNode);
     }
     else{
         this->Iterador=this->Head;

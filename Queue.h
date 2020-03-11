@@ -15,6 +15,7 @@ public:
     int getSize();
 private:
     Nodo<T> *Head;
+    Nodo<T> *Iterador;
     int Size;
 
 };

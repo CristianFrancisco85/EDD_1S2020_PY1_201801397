@@ -23,6 +23,8 @@ void clearWin(WINDOW * win);
 void readJSON(string Texto);
 //CREA LAS FICHAS Y LAS INGRESA DE MANERA ALEATORIA A LA COLA
 void createFichas();
+//GRAFICA REPORTES DEL DICCIONARIO
+void graphDiccionario();
 
 //TAMAÑO DEL TABLERO
 int dimensionTablero;
@@ -32,6 +34,8 @@ LinkedList<Casilla> *CasillasList = new LinkedList<Casilla>();
 DoubleCircularLinkedList<string> *Diccionario = new DoubleCircularLinkedList<string>();
 //COLA DE FICHAS
 Queue<Ficha> *ColaFichas = new Queue<Ficha>();
+
+int reporteDiccionario=0;
 
 int main() {
     int height,width,startx,starty;
@@ -96,7 +100,11 @@ int main() {
                             fichero.get(letra);
                             }
                             fichero.close();
+                            readJSON(textJSON);
+                            graphDiccionario();
                             option1Control = false;
+                            clearWin(win);
+                            showMenu(win);
                         } else {
                             clearWin(win);
                             showMenu(win);
@@ -183,6 +191,10 @@ void readJSON(string Texto){
         for(int i = 0 ; i< obj["diccionario"].size();i++){
             Diccionario->addEnd(obj["diccionario"][i]["palabra"].asString());
         }
+    }
+    else{
+        //cout<<Texto;
+        std::cout << reader.getFormattedErrorMessages() << std::endl;
     }
 
 }
@@ -361,4 +373,65 @@ void createFichas(){
 }
 
 //REPORTES
+
+void graphDiccionario(){
+
+    string command = "";
+    string aux = "";
+    ofstream file;
+    int ListaSize;
+    string TempPalabra;
+
+    ListaSize=Diccionario->getSize();
+    if(ListaSize>0){
+        file.open("./Diccionario" + to_string(reporteDiccionario) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=RL;"<<endl;
+
+        TempPalabra = Diccionario->getFirst();
+        file<< "\""+TempPalabra+"\""<<endl;
+        file<<"->"<<endl;
+        TempPalabra = Diccionario->getXNode(1);
+        file<< "\""+TempPalabra+"\""<<endl;
+
+        TempPalabra = Diccionario->getFirst();
+        file<< "\""+TempPalabra+"\""<<endl;
+        file<<"->"<<endl;
+        TempPalabra = Diccionario->getLast();
+        file<< "\""+TempPalabra+"\""<<endl;
+
+
+        for(int i =1;i<ListaSize-1;i++){
+
+            TempPalabra = Diccionario->getXNode(i);
+            file<< "\""+TempPalabra+"\""<<endl;
+            file<<"->"<<endl;
+            TempPalabra = Diccionario->getXNode(i+1);
+            file<< "\""+TempPalabra+"\""<<endl;
+
+            TempPalabra = Diccionario->getXNode(i+1);
+            file<< "\""+TempPalabra+"\""<<endl;
+            file<<"->"<<endl;
+            TempPalabra = Diccionario->getXNode(i);
+            file<< "\""+TempPalabra+"\""<<endl;
+
+        }
+        TempPalabra = Diccionario->getLast();
+        file<< "\""+TempPalabra+"\""<<endl;
+        file<<"->"<<endl;
+        TempPalabra = Diccionario->getFirst();
+        file<< "\""+TempPalabra+"\""<<endl;
+    }
+    else{
+        file.open("./Malo" + to_string(reporteDiccionario) + ".dot", fstream::in | fstream::out | fstream::trunc);
+    }
+    file << "}";
+    file.close();
+    command = "dot -Tpng ./Diccionario" + to_string(reporteDiccionario) + ".dot -o Diccionario" + to_string(reporteDiccionario) + ".png >>/dev/null 2>>/dev/null";
+    system(command.c_str());
+
+    reporteDiccionario++;
+
+}
 
