@@ -17,13 +17,21 @@ public:
     string getNombre();
     void addpuntaje(int arg1);
     LinkedList<int>* getPuntajes();
+    void setIzquierda(Jugador *arg1);
+    void setDerecha(Jugador *arg1);
+    Jugador* getIzquierda();
+    Jugador* getDerecha();
 private:
+    Jugador *izquierda;
+    Jugador *derecha;
     string nombre;
     LinkedList<int> *puntajes;
 };
 
 Jugador::Jugador(){
-
+    izquierda=NULL;
+    derecha=NULL;
+    puntajes= new LinkedList<int>();
 }
 
 void Jugador::setNombre(string arg1) {
@@ -57,6 +65,22 @@ LinkedList<int>* Jugador::getPuntajes() {
 
 string Jugador::getNombre() {
     return this->nombre;
+}
+
+void Jugador::setIzquierda(Jugador *arg1) {
+    this->izquierda=arg1;
+}
+
+void Jugador::setDerecha(Jugador *arg1) {
+    this->derecha=arg1;
+}
+
+Jugador* Jugador::getIzquierda() {
+    return this->izquierda;
+}
+
+Jugador* Jugador::getDerecha() {
+    return this->derecha;
 }
 
 

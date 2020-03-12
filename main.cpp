@@ -12,6 +12,8 @@
 #include "MatrizDispersa.h"
 #include "Queue.h"
 #include "Ficha.h"
+#include "Jugador.h"
+#include "ABB.h"
 
 using namespace std;
 
@@ -25,6 +27,16 @@ void readJSON(string Texto);
 void createFichas();
 //GRAFICA REPORTES DEL DICCIONARIO
 void graphDiccionario();
+//MUESTRA MENU DE REPORTES
+void showMenuReportes(WINDOW * win);
+//GRAFICA ABB DE JUGADORES
+void graphArbol();
+//GRAFICA ABB
+void graphPreOrden();
+//GRAFICA ABB
+void graphInOrden();
+//GRAFICA ABB
+void graphPostOrden();
 
 //TAMAÑO DEL TABLERO
 int dimensionTablero;
@@ -34,8 +46,16 @@ LinkedList<Casilla> *CasillasList = new LinkedList<Casilla>();
 DoubleCircularLinkedList<string> *Diccionario = new DoubleCircularLinkedList<string>();
 //COLA DE FICHAS
 Queue<Ficha> *ColaFichas = new Queue<Ficha>();
+//ARBOL BINARIO DE BUSQEDAD PARA JUAGORES
+ABB *ArbolJugadores = new ABB();
 
+
+//VARIABLES PARA ENUMERAR REPORTES
 int reporteDiccionario=0;
+int reporteArbol=0;
+int reporteArbolPre=0;
+int reporteArbolIn=0;
+int reporteArbolPost=0;
 
 int main() {
     int height,width,startx,starty;
@@ -64,8 +84,7 @@ int main() {
 
     // MOSTRAR MENU
     showMenu(win);
-    string Ruta="";
-    string textJSON="";
+
     bool Control = true;
 
     while(Control){
@@ -74,9 +93,14 @@ int main() {
         switch(ch){
             //OPCION 1 -- Abrir Archivo JSON
             case 49: {
+
+                string Ruta="";
+                string textJSON="";
+
                 mvwprintw(win, 18, 6, "Escriba Ruta de Archivo: ");
                 wrefresh(win);
                 bool option1Control = true;
+
                 while (option1Control)
                 {
                     ch = getch();
@@ -85,7 +109,20 @@ int main() {
                         wprintw(win, "%c", ch);
                         wrefresh(win);
                     }
-                    if (ch == 10) {
+                    else if(ch==127 && Ruta.length()>0){
+                        Ruta.pop_back();
+                        clearWin(win);
+                        showMenu(win);
+                        mvwprintw(win, 18, 6, "Escriba Ruta de Archivo: ");
+                        wprintw(win, Ruta.c_str());
+                        wrefresh(win);
+                    }
+                    else if(ch==27 ){
+                        option1Control = false;
+                        clearWin(win);
+                        showMenu(win);
+                    }
+                    else if (ch == 10) {
                         string aux = Ruta;
                         //SE VERIFICA QUE EL FICHERO EXISTA Y SE LEE
                         ifstream fichero;
@@ -101,11 +138,12 @@ int main() {
                             }
                             fichero.close();
                             readJSON(textJSON);
-                            graphDiccionario();
+                            //graphDiccionario();
                             option1Control = false;
                             clearWin(win);
                             showMenu(win);
-                        } else {
+                        }
+                        else {
                             clearWin(win);
                             showMenu(win);
                             mvwprintw(win, 20, 6, "NO EXISTE ARCHIVO EN LA RUTA INDICADA");
@@ -115,8 +153,6 @@ int main() {
                         Ruta = "";
                     }
                 }
-                //SE PARSEA JSON
-                readJSON(textJSON);
             }
                 break;
             //OPCION 2  -- Jugar
@@ -124,9 +160,67 @@ int main() {
                 break;
             //OPCION 3 -- Reportes
             case 51:
+                showMenuReportes(win);
                 break;
-            //OPCION 4 -- Salir
-            case 52:
+            //OPCION 4 -- Agregar Nuevo Jugador
+            case 52:{
+                string Nombre="";
+                mvwprintw(win, 18, 6, "Escriba Nombre de Nuevo Jugador: ");
+                wrefresh(win);
+                bool option4Control = true;
+                while (option4Control)
+                {
+                    ch = getch();
+                    if (ch >= 32 && ch <= 126) {
+                        Nombre.push_back(ch);
+                        wprintw(win, "%c", ch);
+                        wrefresh(win);
+                    }
+                    else if(ch==127 && Nombre.length()>0){
+                        Nombre.pop_back();
+                        clearWin(win);
+                        showMenu(win);
+                        mvwprintw(win, 18, 6, "Escriba Nombre de Nuevo Jugador: ");
+                        wprintw(win, Nombre.c_str());
+                        wrefresh(win);
+                    }
+                    else if(ch==27 ){
+                        option4Control = false;
+                        clearWin(win);
+                        showMenu(win);
+                        wrefresh(win);
+                    }
+                    else if (ch == 10) {
+                        Jugador *TempJugador = new Jugador();
+                        TempJugador->setNombre(Nombre);
+
+                        if (ArbolJugadores->addJugador(*TempJugador)) {
+                            delete TempJugador;
+                            clearWin(win);
+                            showMenu(win);
+                            mvwprintw(win, 20, 6, "JUGADOR AGREGADO");
+                            mvwprintw(win, 18, 6, "Presione cualquir tecla para continuar...");
+                            wrefresh(win);
+                            getch();
+                            option4Control = false;
+                            clearWin(win);
+                            showMenu(win);
+                            wrefresh(win);
+                        }
+                        else {
+                            clearWin(win);
+                            showMenu(win);
+                            mvwprintw(win, 20, 6, "YA EXISTE EL NOMBRE DEL JUGADOR");
+                            mvwprintw(win, 18, 6, "Escriba Nombre de Nuevo Jugador: ");
+                            wrefresh(win);
+                        }
+                        Nombre = "";
+                    }
+                }
+            }
+                break;
+            //OPCION 5 -- Salir
+            case 53:
                 clearWin(win);
                 mvwprintw(win,0,0,"Hasta la proxima -- Presione una tecla para continuar...");
                 wrefresh(win);
@@ -159,8 +253,71 @@ void showMenu(WINDOW * win){
     mvwprintw(win,8,6,"1.Abrir Archivo JSON de Configuracion");
     mvwprintw(win,9,6,"2.Jugar");
     mvwprintw(win,10,6,"3.Reportes");
-    mvwprintw(win,11,6,"4.Salir");
+    mvwprintw(win,11,6,"4.Crear Nuevo Jugador");
+    mvwprintw(win,12,6,"5.Salir");
     wrefresh(win);
+
+}
+
+void showMenuReportes(WINDOW * win){
+    clearWin(win);
+    mvwprintw(win,3,5,"          REPORTES");
+    mvwprintw(win,5,6,"1.Diccionario");
+    mvwprintw(win,6,6,"2.ABB de Jugadores");
+    mvwprintw(win,7,6,"3.Recorrido PreOrden del ABB de Jugadores");
+    mvwprintw(win,8,6,"4.Recorrido InOrden del ABB de Jugadores");
+    mvwprintw(win,9,6,"5.Recorrido PostOrden del ABB de Jugadores");
+    mvwprintw(win,10,6,"6.Historial de Puntajes de un Jugador");
+    mvwprintw(win,11,6,"7.ScoreBoard");
+    mvwprintw(win,12,6,"8.Salir");
+    wrefresh(win);
+
+    bool Control = true;
+
+    while(Control){
+        int ch = getch();
+
+        switch(ch){
+            //OPCION 1 -- DICCIONARIO
+            case 49:
+                graphDiccionario();
+                break;
+            //OPCION 2 -- ABB JUGADORES
+            case 50:
+                graphArbol();
+                break;
+            //OPCION 3 -- PREORDEN ABB
+            case 51:
+                graphPreOrden();
+                break;
+            //OPCION 4 -- INORDEN ABB
+            case 52:
+                graphInOrden();
+                break;
+            //OPCION 5 -- POSTORDENABB
+            case 53:
+                graphPostOrden();
+                break;
+            //OPCION 6 -- PUNTAJES JUAGOR
+            case 54:
+                break;
+            //OPCION 7 -- SCOREBOARD
+            case 55:
+                break;
+            //OPCION 8 -- SALIR
+            case 56: {
+                clearWin(win);
+                mvwprintw(win, 0, 0, "Presione una tecla para salir...");
+                wrefresh(win);
+                getch();
+                clearWin(win);
+                showMenu(win);
+                wrefresh(win);
+                Control = false;
+                break;
+            }
+        }
+    }
 
 }
 
@@ -377,7 +534,6 @@ void createFichas(){
 void graphDiccionario(){
 
     string command = "";
-    string aux = "";
     ofstream file;
     int ListaSize;
     string TempPalabra;
@@ -387,51 +543,177 @@ void graphDiccionario(){
         file.open("./Diccionario" + to_string(reporteDiccionario) + ".dot", fstream::in | fstream::out | fstream::trunc);
         file << "digraph {";
         file << "node [shape=box];"<<endl;
-        file << "rankdir=RL;"<<endl;
+        file << "rankdir=LR;"<<endl;
 
         TempPalabra = Diccionario->getFirst();
-        file<< "\""+TempPalabra+"\""<<endl;
-        file<<"->"<<endl;
+        file<< "\""+TempPalabra+"\"";
+        file<<"->";
         TempPalabra = Diccionario->getXNode(1);
-        file<< "\""+TempPalabra+"\""<<endl;
+        file<< "\""+TempPalabra+"\";"<<endl;
+
+        TempPalabra = Diccionario->getXNode(1);
+        file<< "\""+TempPalabra+"\"";
+        file<<"->";
+        TempPalabra = Diccionario->getFirst();
+        file<< "\""+TempPalabra+"\";"<<endl;
 
         TempPalabra = Diccionario->getFirst();
-        file<< "\""+TempPalabra+"\""<<endl;
-        file<<"->"<<endl;
+        file<< "\""+TempPalabra+"\"";
+        file<<"->";
         TempPalabra = Diccionario->getLast();
-        file<< "\""+TempPalabra+"\""<<endl;
+        file<< "\""+TempPalabra+"\";"<<endl;
 
 
         for(int i =1;i<ListaSize-1;i++){
 
             TempPalabra = Diccionario->getXNode(i);
-            file<< "\""+TempPalabra+"\""<<endl;
-            file<<"->"<<endl;
+            file<< "\""+TempPalabra+"\"";
+            file<<"->";
             TempPalabra = Diccionario->getXNode(i+1);
-            file<< "\""+TempPalabra+"\""<<endl;
+            file<< "\""+TempPalabra+"\";"<<endl;
 
             TempPalabra = Diccionario->getXNode(i+1);
-            file<< "\""+TempPalabra+"\""<<endl;
-            file<<"->"<<endl;
+            file<< "\""+TempPalabra+"\"";
+            file<<"->";
             TempPalabra = Diccionario->getXNode(i);
-            file<< "\""+TempPalabra+"\""<<endl;
+            file<< "\""+TempPalabra+"\";"<<endl;
 
         }
         TempPalabra = Diccionario->getLast();
-        file<< "\""+TempPalabra+"\""<<endl;
-        file<<"->"<<endl;
+        file<< "\""+TempPalabra+"\"";
+        file<<"->";
         TempPalabra = Diccionario->getFirst();
-        file<< "\""+TempPalabra+"\""<<endl;
+        file<< "\""+TempPalabra+"\";"<<endl;
     }
     else{
-        file.open("./Malo" + to_string(reporteDiccionario) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file.open("./MaloDiccionario" + to_string(reporteDiccionario) + ".dot", fstream::in | fstream::out | fstream::trunc);
     }
     file << "}";
     file.close();
     command = "dot -Tpng ./Diccionario" + to_string(reporteDiccionario) + ".dot -o Diccionario" + to_string(reporteDiccionario) + ".png >>/dev/null 2>>/dev/null";
     system(command.c_str());
-
+    command="open ./Diccionario" + to_string(reporteDiccionario) + ".png ";
+    system(command.c_str());
     reporteDiccionario++;
 
+}
+
+void graphArbol(){
+    Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
+    string command = "";
+    ofstream file;
+    //Jugador *TempJugador= new Qu
+    ArbolJugadores->preOrden(ArbolJugadores->getRaiz(),AuxCola);
+    int SizeCola = AuxCola->getSize();
+    if(SizeCola>0){
+        file.open("./ABB" + to_string(reporteArbol) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=circle];"<<endl;
+        for(int i=0;i<SizeCola;i++){
+            if(AuxCola->pick()->getIzquierda()!=NULL){
+                file<< "\""+AuxCola->pick()->getNombre()+"\"";
+                file<<"->";
+                file<< "\""+AuxCola->pick()->getIzquierda()->getNombre()+"\";"<<endl;
+            }
+            if(AuxCola->pick()->getDerecha()!=NULL){
+                file<< "\""+AuxCola->pick()->getNombre()+"\"";
+                file<<"->";
+                file<< "\""+AuxCola->pick()->getDerecha()->getNombre()+"\";"<<endl;
+            }
+            AuxCola->pop();
+        }
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./ABB" + to_string(reporteArbol) + ".dot -o ABB" + to_string(reporteArbol) + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open ./ABB" + to_string(reporteArbol) + ".png ";
+        system(command.c_str());
+        reporteArbol++;
+    }
+}
+
+void graphPreOrden(){
+    Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
+    string command = "";
+    ofstream file;
+    //Jugador *TempJugador= new Qu
+    ArbolJugadores->preOrden(ArbolJugadores->getRaiz(),AuxCola);
+    int SizeCola = AuxCola->getSize();
+    if(SizeCola>0){
+        file.open("./ABBPreOrden" + to_string(reporteArbolPre) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        for(int i=1;i<SizeCola;i++){
+            file<<"\""+AuxCola->pop()->getNombre()+"\"";
+            file<<"->";
+            file<<"\""+AuxCola->pick()->getNombre()+"\";";
+        }
+        AuxCola->pop();
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./ABBPreOrden" + to_string(reporteArbolPre) + ".dot -o ABBPreOrden" + to_string(reporteArbolPre) + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open ./ABBPreOrden" + to_string(reporteArbolPre) + ".png ";
+        system(command.c_str());
+        reporteArbolPre++;
+    }
+}
+
+void graphInOrden(){
+    Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
+    string command = "";
+    ofstream file;
+    //Jugador *TempJugador= new Qu
+    ArbolJugadores->inOrden(ArbolJugadores->getRaiz(),AuxCola);
+    int SizeCola = AuxCola->getSize();
+    if(SizeCola>0){
+        file.open("./ABBInOrden" + to_string(reporteArbolIn) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        for(int i=1;i<SizeCola;i++){
+            file<<"\""+AuxCola->pop()->getNombre()+"\"";
+            file<<"->";
+            file<<"\""+AuxCola->pick()->getNombre()+"\";";
+        }
+        AuxCola->pop();
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./ABBInOrden" + to_string(reporteArbolIn) + ".dot -o ABBInOrden" + to_string(reporteArbolIn) + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open ./ABBInOrden" + to_string(reporteArbolIn) + ".png ";
+        system(command.c_str());
+        reporteArbolIn++;
+    }
+
+}
+
+void graphPostOrden(){
+    Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
+    string command = "";
+    ofstream file;
+    //Jugador *TempJugador= new Qu
+    ArbolJugadores->postOrden(ArbolJugadores->getRaiz(),AuxCola);
+    int SizeCola = AuxCola->getSize();
+    if(SizeCola>0){
+        file.open("./ABBPostOrden" + to_string(reporteArbolPost) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        for(int i=1;i<SizeCola;i++){
+            file<<"\""+AuxCola->pop()->getNombre()+"\"";
+            file<<"->";
+            file<<"\""+AuxCola->pick()->getNombre()+"\";";
+        }
+        AuxCola->pop();
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./ABBPostOrden" + to_string(reporteArbolPost) + ".dot -o ABBPostOrden" + to_string(reporteArbolPost) + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open /.ABBPostOrden" + to_string(reporteArbolPost) + ".png ";
+        system(command.c_str());
+        reporteArbolPost++;
+    }
 }
 
