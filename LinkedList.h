@@ -197,14 +197,12 @@ void LinkedList<T>::deleteXNode(int x) {
                     }
                 }
                 if(this->Iterador->getNextNodo() == NULL){
-                    //this->Head=NULL;
-                    std::cout << "ERROR -- NO EXISTE NODO EN LA POSICION " << x;
+                    std::cout << "ERROR -- NO EXISTE NODO EN LA POSICION - 1" << x;
                 }
                 else {
                     this->Iterador->setNextNodo(this->Iterador->getNextNodo()->getNextNodo());
                 }
                 this -> Size--;
-                delete this->Iterador->getNextNodo();
                 this->Iterador = NULL;
             }
             catch (int x1) {

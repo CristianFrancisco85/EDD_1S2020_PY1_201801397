@@ -59,7 +59,7 @@ T Queue<T>::pop() {
         }
     }
     catch (int x){
-        std::cout<<"ERROR -- LA PILA ESTA VACIA , NO ES POSIBLE REALIZAR pop()";
+        std::cout<<"ERROR -- LA COLA ESTA VACIA , NO ES POSIBLE REALIZAR pop()";
         Nodo<T> NullNodo;
         return NullNodo.getNodoValue();
     }
@@ -78,7 +78,7 @@ T Queue<T>::pick() {
         }
     }
     catch (int x){
-        std::cout<<"ERROR -- LA PILA ESTA VACIA , NO ES POSIBLE REALIZAR pick()";
+        std::cout<<"ERROR -- LA COLA ESTA VACIA , NO ES POSIBLE REALIZAR pick()";
         return NullNodo.getNodoValue();
     }
 }

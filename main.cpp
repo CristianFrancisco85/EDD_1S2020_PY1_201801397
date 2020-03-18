@@ -37,9 +37,26 @@ void graphPreOrden();
 void graphInOrden();
 //GRAFICA ABB
 void graphPostOrden();
+//MUESTRA MENU DE SELECCION DE JUGADORES
+Jugador* showJugadores(WINDOW * win,string jugador);
+//COMIENZA JUEGO
+void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2);
+//GRAFICA COLA DE FICHAS
+void graphFichas();
+//VALIDA LA PALABRA CON EL DICCIONARIO
+bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
+//INTERCAMBIA LAS FICHAS
+void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Ficha> *FichasJugador);
+//VALIDA POSICION EN EL TABLERO
+void validarPosicion(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
+//INGRESA LA PALABRA EN EL TABLERO
+void ingresarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
+
 
 //TAMAÑO DEL TABLERO
 int dimensionTablero;
+//TABLERO DEL JUEGO
+MatrizDispersa<Ficha> *Tablero = new MatrizDispersa<Ficha>;
 //LISTA DE CASILLAS DOBLES Y TRIPLES
 LinkedList<Casilla> *CasillasList = new LinkedList<Casilla>();
 //DICCIONARIO DE PALABRAS
@@ -56,12 +73,14 @@ int reporteArbol=0;
 int reporteArbolPre=0;
 int reporteArbolIn=0;
 int reporteArbolPost=0;
+int reporteFichas=0;
+int reporteFichasJugador=0;
 
 int main() {
     int height,width,startx,starty;
 
     height = 26,
-            width= 81;
+    width= 81;
     startx = 2;
     starty = 2;
 
@@ -86,9 +105,9 @@ int main() {
     showMenu(win);
 
     bool Control = true;
-
+    int ch;
     while(Control){
-        int ch = getch();
+        ch = getch();
 
         switch(ch){
             //OPCION 1 -- Abrir Archivo JSON
@@ -157,6 +176,11 @@ int main() {
                 break;
             //OPCION 2  -- Jugar
             case 50:
+                Jugador *jugador1;
+                Jugador *jugador2;
+                jugador1=showJugadores(win,"1");
+                jugador2=showJugadores(win,"2");
+                comenzarJuego(win,jugador1,jugador2);
                 break;
             //OPCION 3 -- Reportes
             case 51:
@@ -236,7 +260,6 @@ int main() {
     return 0;
 }
 
-
 //MANEJO DE INTERFAZ EN CONSOLA
 
 void clearWin(WINDOW * win){
@@ -261,7 +284,7 @@ void showMenu(WINDOW * win){
 
 void showMenuReportes(WINDOW * win){
     clearWin(win);
-    mvwprintw(win,3,5,"          REPORTES");
+    mvwprintw(win,2,5,"REPORTES");
     mvwprintw(win,5,6,"1.Diccionario");
     mvwprintw(win,6,6,"2.ABB de Jugadores");
     mvwprintw(win,7,6,"3.Recorrido PreOrden del ABB de Jugadores");
@@ -273,9 +296,9 @@ void showMenuReportes(WINDOW * win){
     wrefresh(win);
 
     bool Control = true;
-
+    int ch;
     while(Control){
-        int ch = getch();
+        ch = getch();
 
         switch(ch){
             //OPCION 1 -- DICCIONARIO
@@ -321,6 +344,313 @@ void showMenuReportes(WINDOW * win){
 
 }
 
+Jugador* showJugadores(WINDOW * win,string jugador){
+    clearWin(win);
+    mvwprintw(win,3,5,"ELIJA AL JUGADOR ");
+    wprintw(win,jugador.c_str());
+    Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
+    string auxilar;
+
+    ArbolJugadores->preOrden(ArbolJugadores->getRaiz(),AuxCola);
+    int SizeCola = AuxCola->getSize();
+    if(SizeCola>0){
+
+        for(int i=0;i<SizeCola;i++){
+            auxilar=to_string(i)+". "+AuxCola->pop()->getNombre();
+            mvwprintw(win,i+6,5,auxilar.c_str());
+        }
+
+    }
+    wrefresh(win);
+    ArbolJugadores->preOrden(ArbolJugadores->getRaiz(),AuxCola);
+    char ch;
+    int eleccion;
+    bool control=true;
+
+    while(control){
+        ch = getch();
+        eleccion = ch - '0';
+        if(eleccion<AuxCola->getSize()){
+            Jugador *auxJugador;
+            for(int i=0;i<=eleccion;i++){
+                auxJugador=AuxCola->pop();
+            }
+            return auxJugador;
+        }
+    }
+
+}
+
+void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
+
+    int puntajeJugador1,puntajeJugador2;
+    dimensionTablero=20;
+    DoubleLinkedList<Ficha> *FichasJugador1 = new DoubleLinkedList<Ficha>();
+    DoubleLinkedList<Ficha> *FichasJugador2 = new DoubleLinkedList<Ficha>() ;
+    createFichas();
+    //SE REPARTEN LAS 7 FICHAS A CADA JUGADOR
+    for(int i=0;i<7;i++){
+        FichasJugador1->addEnd(ColaFichas->pop());
+        FichasJugador2->addEnd(ColaFichas->pop());
+    }
+    clearWin(win);
+
+    bool runtime =true;
+    int ch;
+
+    Jugador *JugadorActual;
+    DoubleLinkedList<Ficha> *FichasActuales;
+    int *PuntajeActual;
+
+    srand((unsigned) time(0));
+    int apuntadorJugador = rand() % 2;
+
+    if(apuntadorJugador==0){
+        JugadorActual=Jugador1;
+        FichasActuales=FichasJugador1;
+        PuntajeActual=&puntajeJugador1;
+    }
+    else{
+        JugadorActual=Jugador2;
+        FichasActuales=FichasJugador2;
+        PuntajeActual=&puntajeJugador2;
+    }
+
+    while(runtime){
+
+        wmove(win,0,0); wclrtoeol(win);
+        wprintw(win,"ES EL TURNO DE: ");
+        wprintw(win,JugadorActual->getNombre().c_str());
+
+
+        int sizeFichas=FichasActuales->getSize();
+        for(int i=0;i<sizeFichas;i++){
+            mvwprintw(win,3,2+2*i,"%c",FichasActuales->getXNode(i).getLetra());
+        }
+        mvwprintw(win,4,2,"^");
+        mvwprintw(win,5,2,"|");
+        wrefresh(win);
+
+        //SE ELIGE LA DIRECCION
+        int direccion; //0=ABAJO 1=DERECHA
+        mvwprintw(win,10,0,"¿Hacia donde quieres escribir? Utiliza las teclas de direccion, solo se permite DERECHA y ABAJO");
+        wrefresh(win);
+        bool elegirDireccion=true;
+        while(elegirDireccion){
+            ch = getch();
+                 if(ch==KEY_DOWN) { direccion=0; elegirDireccion=false; }
+            else if(ch==KEY_RIGHT){ direccion=1; elegirDireccion=false; }
+        }
+
+        //SE ELIGE LA POSICION DE INICIO
+        wmove(win,10,0); wclrtoeol(win); wrefresh(win);
+        mvwprintw(win,10,0,"¿Donde quieres comenzar? Ingresa coordenada X , Y");
+        wrefresh(win);
+        string coordenada="";
+        bool boolcoordenadas;
+        int coorX,coorY;
+
+        //COORDENADA EN X
+        boolcoordenadas=true;
+        mvwprintw(win,11,0,"Coordenada en X: ");
+        wrefresh(win);
+        while(boolcoordenadas){
+            ch = getch();
+            if(ch >=48 && ch<=57){
+                coordenada=coordenada.append(to_string(ch-48));
+                wprintw(win,"%c",ch); wrefresh(win);
+            }
+            else if(ch==10){
+                coorX=stoi(coordenada);
+                if(coorX<dimensionTablero){
+                    boolcoordenadas=false;
+                    wmove(win,13,0); wclrtoeol(win);
+                }
+                else{
+                    wmove(win,11,0); wclrtoeol(win);
+                    mvwprintw(win,13,0,"Coordenada en X no valida,intente de nuevo ");
+                    mvwprintw(win,11,0,"Coordenada en X: ");
+                    wrefresh(win);
+                    coordenada="";
+                }
+            }
+        }
+
+        //COORDENADA EN Y
+        boolcoordenadas=true;
+        wmove(win,11,0); wclrtoeol(win);
+        mvwprintw(win,11,0,"Coordenada en Y: ");
+        wrefresh(win);
+        coordenada="";
+        while(boolcoordenadas){
+            ch = getch();
+            if(ch >=48 && ch<=57){
+                coordenada=coordenada.append(to_string(ch-48));
+                wprintw(win,"%c",ch); wrefresh(win);
+            }
+            else if(ch==10){
+                coorY=stoi(coordenada);
+                if(coorY<dimensionTablero){
+                    boolcoordenadas=false;
+                    wmove(win,13,0); wclrtoeol(win);
+                }
+                else{
+                    wmove(win,11,0); wclrtoeol(win);
+                    mvwprintw(win,13,0,"Coordenada en Y no valida,intente de nuevo ");
+                    mvwprintw(win,11,0,"Coordenada en Y: ");
+                    wrefresh(win);
+                    coordenada="";
+                }
+            }
+        }
+
+        //SE SELECCIONAN FICHAS A PONER EN EL TABLERO
+        wmove(win,11,0); wclrtoeol(win);
+        mvwprintw(win,10,0,"Selecciona en orden las fichas pulsando Enter , cuando termines presiona Ctrl+E");
+        mvwprintw(win,12,0,"Para intercambiar fichas presiona Ctrl+S");
+        wrefresh(win);
+
+        bool elegirFichas=true;
+        int punteroLetra=0;
+        DoubleLinkedList<Ficha> *TempFichas = new DoubleLinkedList<Ficha>();
+
+        while(elegirFichas){
+
+            ch = getch();
+            if(ch==KEY_LEFT && punteroLetra>0){
+                punteroLetra--;
+                wmove(win,4,0); wclrtoeol(win);
+                wmove(win,5,0); wclrtoeol(win);
+                mvwprintw(win,4,2+2*punteroLetra,"^");
+                mvwprintw(win,5,2+2*punteroLetra,"|");
+                wrefresh(win);
+            }
+            else if(ch==KEY_RIGHT && punteroLetra<sizeFichas-1){
+                punteroLetra++;
+                wmove(win,4,0); wclrtoeol(win);
+                wmove(win,5,0); wclrtoeol(win);
+                mvwprintw(win,4,2+2*punteroLetra,"^");
+                mvwprintw(win,5,2+2*punteroLetra,"|");
+                wrefresh(win);
+            }
+            else if(ch==10){
+                TempFichas->addEnd(FichasActuales->getXNode(punteroLetra));
+                FichasActuales->deleteXNode(punteroLetra);
+                sizeFichas=FichasActuales->getSize();
+                wmove(win,3,0); wclrtoeol(win);
+                for(int i=0;i<sizeFichas;i++){
+                    mvwprintw(win,3,2+2*i,"%c",FichasActuales->getXNode(i).getLetra());
+                }
+                wmove(win,4,0); wclrtoeol(win);
+                wmove(win,5,0); wclrtoeol(win);
+                mvwprintw(win,4,2,"^");
+                mvwprintw(win,5,2,"|");
+                wrefresh(win);
+                punteroLetra=0;
+            }
+            else if(ch==5){
+                //SE TERMINA TURNO
+                elegirFichas=false;
+                wmove(win,4,0); wclrtoeol(win);
+                wmove(win,5,0); wclrtoeol(win);
+            }
+            else if(ch==19){
+                elegirFichas=false;
+                punteroLetra=0;
+                wmove(win,4,0); wclrtoeol(win);
+                wmove(win,5,0); wclrtoeol(win);
+                mvwprintw(win,4,2,"^");
+                mvwprintw(win,5,2,"|");
+                wrefresh(win);
+            }
+
+        }
+
+        //SE VALIDA LA PALABRA FORMADA Y SU UBICACION EN EL TABLERO
+        if(ch==5){
+            if(validarPalabra(TempFichas,direccion,coorX,coorY)){
+
+            }
+            else{
+                wmove(win,10,0); wclrtoeol(win);
+                mvwprintw(win,10,0,"Palabra no Valida, presione cualquier tecla.");
+                mvwprintw(win,16,0,"%d",TempFichas->getSize());
+                wrefresh(win);
+                ch=getch();
+            }
+        }
+
+        //SE SELECCIONAN FICHAS A INTERCAMBIAR
+        else if(ch==19){
+            wmove(win,10,0); wclrtoeol(win);
+            wmove(win,12,0); wclrtoeol(win);
+            mvwprintw(win,10,0,"Selecciona las fichas pulsando Enter, cuando termines presiona Ctrl+E");
+            wrefresh(win);
+            elegirFichas=true;
+            while(elegirFichas){
+
+                ch = getch();
+                if(ch==KEY_LEFT && punteroLetra>0){
+                    punteroLetra--;
+                    wmove(win,4,0); wclrtoeol(win);
+                    wmove(win,5,0); wclrtoeol(win);
+                    mvwprintw(win,4,2+2*punteroLetra,"^");
+                    mvwprintw(win,5,2+2*punteroLetra,"|");
+                    wrefresh(win);
+                }
+                else if(ch==KEY_RIGHT && punteroLetra<sizeFichas-1){
+                    punteroLetra++;
+                    wmove(win,4,0); wclrtoeol(win);
+                    wmove(win,5,0); wclrtoeol(win);
+                    mvwprintw(win,4,2+2*punteroLetra,"^");
+                    mvwprintw(win,5,2+2*punteroLetra,"|");
+                    wrefresh(win);
+                }
+                else if(ch==10){
+                    TempFichas->addEnd(FichasActuales->getXNode(punteroLetra));
+                    FichasActuales->deleteXNode(punteroLetra);
+                    sizeFichas=FichasActuales->getSize();
+                    wmove(win,3,0); wclrtoeol(win);
+                    for(int i=0;i<sizeFichas;i++){
+                        mvwprintw(win,3,2+2*i,"%c",FichasActuales->getXNode(i).getLetra());
+                    }
+                    wmove(win,4,0); wclrtoeol(win);
+                    wmove(win,5,0); wclrtoeol(win);
+                    mvwprintw(win,4,2,"^");
+                    mvwprintw(win,5,2,"|");
+                    wrefresh(win);
+                    punteroLetra=0;
+                }
+                else if(ch==5){
+                    //SE TERMINA TURNO
+                    elegirFichas=false;
+                    intercambiarFichas(TempFichas,FichasActuales);
+                    wmove(win,4,0); wclrtoeol(win);
+                    wmove(win,5,0); wclrtoeol(win);
+                }
+            }
+
+        }
+
+        //SE INTERCAMBIA EL TURNO DEL JUGADOR
+        if(apuntadorJugador==0){
+            apuntadorJugador=1;
+            JugadorActual=Jugador2;
+            FichasActuales=FichasJugador2;
+            PuntajeActual=&puntajeJugador2;
+        }
+        else{
+            apuntadorJugador=0;
+            JugadorActual=Jugador1;
+            FichasActuales=FichasJugador1;
+            PuntajeActual=&puntajeJugador1;
+        }
+
+        clearWin(win);
+    }
+
+}
+
 //LECTURA DE JSON Y CREACION DE OBJETOS
 
 void readJSON(string Texto){
@@ -359,153 +689,156 @@ void readJSON(string Texto){
 //CREACION DE FICHAS
 
 void createFichas(){
+    //SE VACIA COLA DE FICHAS
+    delete ColaFichas;
+    ColaFichas = new Queue<Ficha>();
     //LAS FICHAS SON "QUEMADAS"
-    LinkedList<Ficha> *TempFichas = new LinkedList<Ficha>();
-    Ficha *TempFicha = new Ficha();
+    DoubleLinkedList<Ficha> *TempFichas = new DoubleLinkedList<Ficha>();
+    Ficha TempFicha ;
     //SE CREAN FICHAS DE CADA LETRA
     //A
     for(int i=0;i<12;i++){
-        TempFicha->setLetra('A');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('A');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //E
     for(int i=0;i<12;i++){
-        TempFicha->setLetra('E');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('E');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //O
     for(int i=0;i<9;i++){
-        TempFicha->setLetra('O');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('O');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //I
     for(int i=0;i<6;i++){
-        TempFicha->setLetra('I');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('I');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //S
     for(int i=0;i<6;i++){
-        TempFicha->setLetra('S');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('S');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //N
     for(int i=0;i<5;i++){
-        TempFicha->setLetra('N');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('N');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //L
     for(int i=0;i<4;i++){
-        TempFicha->setLetra('L');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('L');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //R
     for(int i=0;i<5;i++){
-        TempFicha->setLetra('R');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('R');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //U
     for(int i=0;i<5;i++){
-        TempFicha->setLetra('U');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('U');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //T
     for(int i=0;i<4;i++){
-        TempFicha->setLetra('T');
-        TempFicha->setPuntos(1);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('T');
+        TempFicha.setPuntos(1);
+        TempFichas->addEnd(TempFicha);
     }
     //D
     for(int i=0;i<5;i++){
-        TempFicha->setLetra('D');
-        TempFicha->setPuntos(2);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('D');
+        TempFicha.setPuntos(2);
+        TempFichas->addEnd(TempFicha);
     }
     //G
     for(int i=0;i<2;i++){
-        TempFicha->setLetra('G');
-        TempFicha->setPuntos(2);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('G');
+        TempFicha.setPuntos(2);
+        TempFichas->addEnd(TempFicha);
     }
     //C
     for(int i=0;i<4;i++){
-        TempFicha->setLetra('C');
-        TempFicha->setPuntos(3);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('C');
+        TempFicha.setPuntos(3);
+        TempFichas->addEnd(TempFicha);
     }
     //B
     for(int i=0;i<2;i++){
-        TempFicha->setLetra('B');
-        TempFicha->setPuntos(3);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('B');
+        TempFicha.setPuntos(3);
+        TempFichas->addEnd(TempFicha);
     }
     //M
     for(int i=0;i<2;i++){
-        TempFicha->setLetra('M');
-        TempFicha->setPuntos(3);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('M');
+        TempFicha.setPuntos(3);
+        TempFichas->addEnd(TempFicha);
     }
     //P
     for(int i=0;i<2;i++){
-        TempFicha->setLetra('P');
-        TempFicha->setPuntos(3);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('P');
+        TempFicha.setPuntos(3);
+        TempFichas->addEnd(TempFicha);
     }
     //H
     for(int i=0;i<2;i++){
-        TempFicha->setLetra('H');
-        TempFicha->setPuntos(4);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('H');
+        TempFicha.setPuntos(4);
+        TempFichas->addEnd(TempFicha);
     }
     //F
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('F');
-        TempFicha->setPuntos(4);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('F');
+        TempFicha.setPuntos(4);
+        TempFichas->addEnd(TempFicha);
     }
     //V
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('V');
-        TempFicha->setPuntos(4);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('V');
+        TempFicha.setPuntos(4);
+        TempFichas->addEnd(TempFicha);
     }
     //Y
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('Y');
-        TempFicha->setPuntos(4);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('Y');
+        TempFicha.setPuntos(4);
+        TempFichas->addEnd(TempFicha);
     }
     //Q
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('Q');
-        TempFicha->setPuntos(5);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('Q');
+        TempFicha.setPuntos(5);
+        TempFichas->addEnd(TempFicha);
     }
     //J
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('J');
-        TempFicha->setPuntos(8);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('J');
+        TempFicha.setPuntos(8);
+        TempFichas->addEnd(TempFicha);
     }
     //X
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('X');
-        TempFicha->setPuntos(8);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('X');
+        TempFicha.setPuntos(8);
+        TempFichas->addEnd(TempFicha);
     }
     //Z
     for(int i=0;i<1;i++){
-        TempFicha->setLetra('J');
-        TempFicha->setPuntos(10);
-        TempFichas->addEnd(*TempFicha);
+        TempFicha.setLetra('Z');
+        TempFicha.setPuntos(10);
+        TempFichas->addEnd(TempFicha);
     }
 
     srand((unsigned) time(0));
@@ -513,20 +846,108 @@ void createFichas(){
 
     //SE INGRESAN DE MANERA ALEATORIA LAS 95 FICHAS A LA COLA
 
-    for(int i=0;i<95;i++){
+    for(int i=0;i<94;i++){
+
         if(TempFichas->getSize()!=0){
-            randomNumber = (rand() % TempFichas->getSize()-1);
+            randomNumber = rand() % TempFichas->getSize();
             ColaFichas->push(TempFichas->getXNode(randomNumber));
             TempFichas->deleteXNode(randomNumber);
         }
         else{
             ColaFichas->push(TempFichas->getFirst());
-            delete TempFichas;
-            break;
+            TempFichas->deleteXNode(0);
+            //delete TempFichas;
+            //break;
         }
     }
 
 
+}
+
+//FUNCIONES DEL JUEGO
+
+bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY){
+
+    MatrizDispersa<Ficha> *TempTablero=new MatrizDispersa<Ficha>;
+    *TempTablero=*Tablero;
+    string palabra="";
+    int CantidadFichas = TempFichas->getSize();
+    NodoOrtogonal<Ficha> *TempFicha = new NodoOrtogonal<Ficha>;
+
+    //SE VALIDA QUE SE PUEDA INSERTAR EN EN TABLERO
+    if(direccion==0){
+        for(int i=0;i<CantidadFichas;i++){
+            TempFicha=TempTablero->getInXY(coorX,coorY++);
+            if(coorY-1<dimensionTablero){
+                if(TempFicha->getIndice()==-100){
+                    delete TempFicha;
+                    TempTablero->addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
+                }
+                else{
+                    palabra=palabra.append(to_string(TempFicha->getNodoValue().getLetra()));
+                    i--;
+                }
+            }
+            else{
+                return false;
+            }
+        }
+    }
+    else{
+        for(int i=0;i<CantidadFichas;i++){
+            TempFicha=TempTablero->getInXY(coorX++,coorY);
+            cout<<coorX;
+            if((coorX-1)<dimensionTablero){
+                if(TempFicha->getIndice()== -100){
+                    delete TempFicha;
+                    TempTablero->addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
+                }
+                else{
+                    palabra=palabra.append(to_string(TempFicha->getNodoValue().getLetra()));
+                    i--;
+                }
+            }
+            else{
+                return false;
+            }
+        }
+    }
+
+    bool validacionPalabra=false;
+    for(int i=0;i<Diccionario->getSize();i++){
+        if(Diccionario->getXNode(i).compare(palabra)==0){
+            validacionPalabra=true;
+        }
+    }
+    //if(!validacionPalabra){
+      //  return false;
+    //}
+
+    *Tablero=*TempTablero;
+    delete TempTablero;
+    delete TempFicha;
+
+    return true;
+
+}
+
+void validarPosicion(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY){
+
+}
+
+void ingresarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY){
+
+}
+
+void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Ficha> *FichasJugador){
+    int CantidadFichas = TempFichas->getSize();
+    for(int i=0;i<CantidadFichas;i++){
+        ColaFichas->push(TempFichas->getXNode(i));
+        FichasJugador->addEnd(ColaFichas->pop());
+    }
+    delete TempFichas;
 }
 
 //REPORTES
@@ -714,6 +1135,32 @@ void graphPostOrden(){
         command="open /.ABBPostOrden" + to_string(reporteArbolPost) + ".png ";
         system(command.c_str());
         reporteArbolPost++;
+    }
+}
+
+void graphFichas(){
+    Queue<Ficha> AuxCola = *ColaFichas;
+    string command = "";
+    ofstream file;
+
+    int SizeCola = AuxCola.getSize();
+    if(SizeCola>0){
+        file.open("./Fichas" + to_string(reporteFichas) + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=record];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        file<< "struct1 [label=\" "<<endl;
+        for(int i = 0 ; i <SizeCola-1;i++){
+            file<<"<f"+to_string(i)+">"+ " "+ AuxCola.pick().getLetra()+"x"+to_string(AuxCola.pop().getPuntos())+"pts |"<<endl;
+        }
+        file<<"<f"+to_string(SizeCola)+">"+ " "+ AuxCola.pick().getLetra()+"x"+to_string(AuxCola.pop().getPuntos())+"pts \"];"<<endl;
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./Fichas" + to_string(reporteFichas) + ".dot -o Fichas" + to_string(reporteFichas) + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open ./Fichas" + to_string(reporteFichas) + ".png ";
+        system(command.c_str());
+        reporteFichas++;
     }
 }
 

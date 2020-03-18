@@ -43,7 +43,8 @@ T DoubleLinkedList<T>::getFirst() {
     }
     catch (int x){
         std::cout<<"ERROR -- LA LISTA ESTA VACIA , NO ES POSIBLE REALIZAR getFirst()";
-        return NULL;
+        Nodo<T> NullNodo;
+        return NullNodo.getNodoValue();
     }
 
 }
@@ -70,7 +71,7 @@ T DoubleLinkedList<T>::getLast() {
 
 template <class T>
 T DoubleLinkedList<T>::getXNode(int x ){
-    Nodo<T> NullNodo;
+
     try {
         if (this->Head == NULL) {
             throw -1;
@@ -88,6 +89,7 @@ T DoubleLinkedList<T>::getXNode(int x ){
             }
             catch (int x1) {
                 std::cout << "ERROR -- NO EXISTE NODO EN LA POSICION " <<x;
+                Nodo<T> NullNodo;
                 return NullNodo.getNodoValue();
                 //return NULL;
             }
@@ -95,6 +97,7 @@ T DoubleLinkedList<T>::getXNode(int x ){
     }
     catch (int x){
         std::cout<<"ERROR -- LA LISTA ESTA VACIA , NO ES POSIBLE REALIZAR getXNode()";
+        Nodo<T> NullNodo;
         return NullNodo.getNodoValue();
         //return NULL;
     }
@@ -107,7 +110,6 @@ void DoubleLinkedList<T>::addBegin(T Value) {
     NewNode->setNodoValue(Value);
     if(this->Head==NULL){
         this->Head=NewNode;
-
     }
     else {
         this->Head->setPrevNodo(NewNode);
