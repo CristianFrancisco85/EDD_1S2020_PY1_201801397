@@ -47,10 +47,8 @@ void graphFichas();
 bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
 //INTERCAMBIA LAS FICHAS
 void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Ficha> *FichasJugador);
-//VALIDA POSICION EN EL TABLERO
-void validarPosicion(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
-//INGRESA LA PALABRA EN EL TABLERO
-void ingresarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
+//GRAFICA TABLERO DE JUEGO
+void graphTablero();
 
 
 //TAMAÑO DEL TABLERO
@@ -569,7 +567,7 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
         //SE VALIDA LA PALABRA FORMADA Y SU UBICACION EN EL TABLERO
         if(ch==5){
             if(validarPalabra(TempFichas,direccion,coorX,coorY)){
-
+                graphTablero();
             }
             else{
                 wmove(win,10,0); wclrtoeol(win);
@@ -877,15 +875,16 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
     //SE VALIDA QUE SE PUEDA INSERTAR EN EN TABLERO
     if(direccion==0){
         for(int i=0;i<CantidadFichas;i++){
-            TempFicha=TempTablero->getInXY(coorX,coorY++);
+            TempFicha=TempTablero->getInXY(coorX,coorY);
             if(coorY-1<dimensionTablero){
                 if(TempFicha->getIndice()==-100){
                     delete TempFicha;
-                    TempTablero->addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    TempTablero->addInXY(coorX,coorY++,TempFichas->getXNode(i));
                     palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
                 }
                 else{
                     palabra=palabra.append(to_string(TempFicha->getNodoValue().getLetra()));
+                    coorY++;
                     i--;
                 }
             }
@@ -896,16 +895,17 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
     }
     else{
         for(int i=0;i<CantidadFichas;i++){
-            TempFicha=TempTablero->getInXY(coorX++,coorY);
-            cout<<coorX;
+            TempFicha=TempTablero->getInXY(coorX,coorY);
             if((coorX-1)<dimensionTablero){
                 if(TempFicha->getIndice()== -100){
                     delete TempFicha;
-                    TempTablero->addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    TempTablero->addInXY(coorX++,coorY,TempFichas->getXNode(i));
                     palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
+                    //AGREGAR CODIGO PARA AGARRAR UNA ULTIMA LETRA
                 }
                 else{
                     palabra=palabra.append(to_string(TempFicha->getNodoValue().getLetra()));
+                    coorX++;
                     i--;
                 }
             }
@@ -933,13 +933,6 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
 
 }
 
-void validarPosicion(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY){
-
-}
-
-void ingresarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY){
-
-}
 
 void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Ficha> *FichasJugador){
     int CantidadFichas = TempFichas->getSize();
@@ -1162,5 +1155,67 @@ void graphFichas(){
         system(command.c_str());
         reporteFichas++;
     }
+}
+
+void graphTablero(){
+    string command = "";
+    ofstream file;
+    NodoOrtogonal<Ficha> *Iterador;
+    int cantX=0; //CANTIDAD DE INDICES EN X
+    int cantY=0; //CANTIDAD DE INDICES EN Y
+
+    file.open("./Tablero.dot", fstream::in | fstream::out | fstream::trunc);
+    file << "digraph {";
+    file << "node [shape=box];"<<endl;
+    file<<"Main[ label = \"Matriz\", width = 1.5, style = filled, fillcolor = firebrick1, group = 1 ];"<<endl;
+    file<<"e0[ shape = point, width = 0 ];"<<endl;
+    file<<"e1[ shape = point, width = 0 ];"<<endl;
+    Iterador=Tablero->getHead()->getDownNodo();
+
+    //INDICES Y ENLACES DE Y
+    while(Iterador!=NULL){
+        file<<"Y"+to_string(cantY)+"[label = \""+to_string(Iterador->getIndice())+"\" width = 1.5 style = filled, fillcolor = bisque1, group = 1 ];"<<endl;
+        Iterador=Iterador->getDownNodo();
+        if(Iterador!=NULL){
+            cantY++;
+            file<<"Y"+to_string(cantY-1)+"->Y"+to_string(cantY)+";";
+            file<<"Y"+to_string(cantY)+"->Y"+to_string(cantY-1)+";";
+        }
+    }
+    //INDICES Y ENLACES DE X
+    Iterador=Tablero->getHead()->getRightNodo();
+    while(Iterador!=NULL){
+        file<<"X"+to_string(cantX)+"[label = \""+to_string(Iterador->getIndice())+"\" width = 1.5 style = filled, fillcolor = bisque1, group = "+to_string(cantX+2)+" ];"<<endl;
+        Iterador=Iterador->getRightNodo();
+        if(Iterador!=NULL){
+            cantX++;
+            file<<"X"+to_string(cantX-1)+"->X"+to_string(cantX)+";"<<endl;
+            file<<"X"+to_string(cantX)+"->X"+to_string(cantX-1)+";"<<endl;
+        }
+    }
+    //ENLACES Y ALINEACION CON MAIN
+    if(cantX>0||cantY>0) {
+        file << "Main->X0;" << endl;
+        file << "Main->Y0;" << endl;
+        file << "X0->Main;" << endl;
+        file << "Y0->Main;" << endl;
+        file <<"{ rank = same; Main; ";
+        for(int i=0;i<=cantX;i++){
+            file<<"X"+to_string(i)+"; ";
+        }
+        file <<"}"<<endl;
+    }
+
+
+
+    file << "}";
+    file.close();
+    command = "dot -Tpng ./Tablero.dot -o Tablero.png >>/dev/null 2>>/dev/null";
+    system(command.c_str());
+    command="open ./Tablero.png ";
+    system(command.c_str());
+    reporteFichas++;
+
+
 }
 

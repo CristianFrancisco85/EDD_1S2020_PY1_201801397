@@ -11,6 +11,7 @@ public:
     void addInXY(int x,int y,T Value);
     void deleteInXY(int x,int y);
     NodoOrtogonal<T>* getInXY(int x,int y);
+    NodoOrtogonal<T>* getHead();
 
 private:
     NodoOrtogonal<T> *Head;
@@ -48,10 +49,11 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
     }
 
     //SE BUSCA INDICE DE COLUMNA
-    this->Iterador=this->Head->getRightNodo();
+    this->Iterador=this->Head;
+
     //MIENTRAS QUE EL INDICE SEA DIFERENTE DE X
     while(this->Iterador->getIndice()!= x){
-        this->Iterador=this->Iterador->getRightNodo();//AQUI ESTA EL ERROR
+        this->Iterador=this->Iterador->getRightNodo();
         //SI EL INDICE ES MAYOR QUE X
         if(this->Iterador->getIndice() > x){
             //INSERTAR NUEVO INDICE A LA IZQUIERDA DEL ITERADOR
@@ -65,7 +67,7 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
             this->Iterador=NewIndice;
         }
         //SI TODOS LOS INDICES SON MENORES
-        else if(this->Iterador->getRightNodo()==NULL && this->Iterador->getX() != x){
+        else if(this->Iterador->getRightNodo()==NULL && this->Iterador->getIndice() != x){
             //INSERTAR NUEVO INDICE A LA DERECHA DEL ITERADOR
             NodoOrtogonal<T> *NewIndice = new NodoOrtogonal<T>;
             NewIndice->setIndice(x);
@@ -86,7 +88,7 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
         do{
             this->Iterador=this->Iterador->getDownNodo();
             //SI EL INDICE DEL NODO ES MAYOR QUE Y
-            if(this->Iterador->getDownNodo()->getY()> y){
+            if(this->Iterador->getY()> y){
                 //INSERTAR NUEVO NODO ARRIBA DEL ITERADOR
                 this->Iterador->getUpNodo()->setDownNodo(NewNodo);
                 NewNodo->setUpNodo(this->Iterador->getUpNodo());
@@ -109,7 +111,7 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
 
 
     //SE BUSCA INDICE FILA
-    this->Iterador=this->Head->getDownNodo();
+    this->Iterador=this->Head;
 
     //MIENTRAS QUE EL INDICE SEA DIFERENTE DE Y
     while(this->Iterador->getIndice()!= y){
@@ -128,7 +130,7 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
             this->Iterador=NewIndice;
         }
         //SI TODOS LOS INDICES SON MENORES
-        else if(this->Iterador->getDownNodo()==NULL && this->Iterador->getY()!= y){
+        else if(this->Iterador->getDownNodo()==NULL && this->Iterador->getIndice()!= y){
             //INSERTAR NUEVO INDICE ABAJO DEL ITERADOR
             NodoOrtogonal<T> *NewIndice = new NodoOrtogonal<T>;
             NewIndice->setIndice(y);
@@ -147,9 +149,9 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
     else{
         //INSERTAR HACIA LA DERECHA EN X (Iterador)
         do{
-            this->Iterador=this->Iterador->getDownNodo();
+            this->Iterador=this->Iterador->getRightNodo();
             //SI EL INDICE DEL NODO ES MAYOR QUE X
-            if(this->Iterador->getDownNodo()->getX()> x){
+            if(this->Iterador->getX()> x){
                 //INSERTAR NUEVO NODO LA IZQUIERDA DEL ITERADOR
                 this->Iterador->getLeftNodo()->setRightNodo(NewNodo);
                 NewNodo->setLeftNodo(this->Iterador->getLeftNodo());
@@ -158,7 +160,7 @@ void MatrizDispersa<T>::addInXY(int x, int y, T Value) {
                 this->Iterador=NewNodo;
             }
             //SI YA NO HAY NODOS HACIA LA DERECHA
-            else if(this->Iterador->getDownNodo()==NULL){
+            else if(this->Iterador->getRightNodo()==NULL){
                 this->Iterador->setRightNodo(NewNodo);
                 NewNodo->setLeftNodo(this->Iterador);
                 this->Iterador=NewNodo;
@@ -219,17 +221,14 @@ NodoOrtogonal<T>* MatrizDispersa<T>::getInXY(int x, int y) {
 
     //SE BUSCA NODO HACIA ABAJO CON COORDENADA Y
     do{
+        this->Iterador=this->Iterador->getDownNodo();
         //SI NO EXISTE EL INDICE
-        if(this->Iterador->getDownNodo()==NULL && this->Iterador->getIndice()!= y){
+        if(this->Iterador==NULL){
             NodoOrtogonal<T> *NullNodo= new NodoOrtogonal<T>;
             NullNodo->setIndice(-100);
             return NullNodo;
         }
-        else{
-            if(this->Iterador->getIndice()!= y){
-                this->Iterador=this->Iterador->getDownNodo();
-            }
-        }
+
     }while(this->Iterador->getY()!=y);
 
     return this->Iterador;
@@ -238,6 +237,10 @@ NodoOrtogonal<T>* MatrizDispersa<T>::getInXY(int x, int y) {
 
 }
 
+template <class T>
+NodoOrtogonal<T>* MatrizDispersa<T>::getHead(){
+    return this->Head;
+}
 
 
 
