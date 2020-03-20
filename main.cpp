@@ -1161,6 +1161,8 @@ void graphTablero(){
     string command = "";
     ofstream file;
     NodoOrtogonal<Ficha> *Iterador;
+    NodoOrtogonal<Ficha> *Iterador2;
+    Ficha TempFicha;
     int cantX=0; //CANTIDAD DE INDICES EN X
     int cantY=0; //CANTIDAD DE INDICES EN Y
 
@@ -1170,27 +1172,27 @@ void graphTablero(){
     file<<"Main[ label = \"Matriz\", width = 1.5, style = filled, fillcolor = firebrick1, group = 1 ];"<<endl;
     file<<"e0[ shape = point, width = 0 ];"<<endl;
     file<<"e1[ shape = point, width = 0 ];"<<endl;
-    Iterador=Tablero->getHead()->getDownNodo();
 
+    Iterador=Tablero->getHead()->getDownNodo();
     //INDICES Y ENLACES DE Y
     while(Iterador!=NULL){
-        file<<"Y"+to_string(cantY)+"[label = \""+to_string(Iterador->getIndice())+"\" width = 1.5 style = filled, fillcolor = bisque1, group = 1 ];"<<endl;
+        file<<"Y"+to_string(Iterador->getIndice())+"[label = \""+to_string(Iterador->getIndice())+"\" width = 1.5 style = filled, fillcolor = bisque1, group = 1 ];"<<endl;
         Iterador=Iterador->getDownNodo();
         if(Iterador!=NULL){
             cantY++;
-            file<<"Y"+to_string(cantY-1)+"->Y"+to_string(cantY)+";";
-            file<<"Y"+to_string(cantY)+"->Y"+to_string(cantY-1)+";";
+            file<<"Y"+to_string(Iterador->getUpNodo()->getIndice())+"->Y"+to_string(Iterador->getIndice())+";";
+            file<<"Y"+to_string(Iterador->getIndice())+"->Y"+to_string(Iterador->getUpNodo()->getIndice())+";";
         }
     }
     //INDICES Y ENLACES DE X
     Iterador=Tablero->getHead()->getRightNodo();
     while(Iterador!=NULL){
-        file<<"X"+to_string(cantX)+"[label = \""+to_string(Iterador->getIndice())+"\" width = 1.5 style = filled, fillcolor = bisque1, group = "+to_string(cantX+2)+" ];"<<endl;
+        file<<"X"+to_string(Iterador->getIndice())+"[label = \""+to_string(Iterador->getIndice())+"\" width = 1.5 style = filled, fillcolor = bisque1, group = "+to_string(Iterador->getIndice()+2)+" ];"<<endl;
         Iterador=Iterador->getRightNodo();
         if(Iterador!=NULL){
             cantX++;
-            file<<"X"+to_string(cantX-1)+"->X"+to_string(cantX)+";"<<endl;
-            file<<"X"+to_string(cantX)+"->X"+to_string(cantX-1)+";"<<endl;
+            file<<"X"+to_string(Iterador->getLeftNodo()->getIndice())+"->X"+to_string(Iterador->getIndice())+";";
+            file<<"X"+to_string(Iterador->getIndice())+"->X"+to_string(Iterador->getLeftNodo()->getIndice())+";";
         }
     }
     //ENLACES Y ALINEACION CON MAIN
@@ -1205,6 +1207,60 @@ void graphTablero(){
         }
         file <<"}"<<endl;
     }
+
+    //SE ESCRIBEN TODOS LOS NODOS DE LAS FICHAS
+    Iterador=Tablero->getHead();
+    for(int i =0;i<=cantY;i++){
+        Iterador=Iterador->getDownNodo();
+        Iterador2 = Iterador->getRightNodo();
+        while(Iterador2!=NULL){
+            TempFicha=Iterador2->getNodoValue();
+            file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+
+            "[label = \""+TempFicha.getLetra()+"\" width = 1.5 , group = "+to_string(Iterador2->getX()+2)+" ];"<<endl;
+            Iterador2= Iterador2->getRightNodo();
+        }
+    }
+
+    //SE CREAN TODOS LOS ENLACES DE LAS FICHAS
+    Iterador=Tablero->getHead();
+    for(int i =0;i<=cantY;i++){
+        Iterador=Iterador->getDownNodo();
+        Iterador2= Iterador->getRightNodo();
+        while(Iterador2!=NULL){
+            if(Iterador2->getUpNodo()!=NULL){
+                if(Iterador2->getUpNodo()->getIndice()!=-1){
+
+                    file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
+                    "X"+to_string(Iterador2->getUpNodo()->getX())+"_Y"+to_string(Iterador2->getUpNodo()->getY())+";";
+                }
+                else{
+                    file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
+                    "X"+to_string(Iterador->getUpNodo()->getIndice())+";";
+                }
+            }
+            if(Iterador2->getRightNodo()!=NULL){
+                file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
+                "X"+to_string(Iterador2->getRightNodo()->getX())+"_Y"+to_string(Iterador2->getRightNodo()->getY())+";";
+            }
+            if(Iterador2->getDownNodo()!=NULL){
+                file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
+                "X"+to_string(Iterador2->getDownNodo()->getX())+"_Y"+to_string(Iterador2->getDownNodo()->getY())+";";
+            }
+            if(Iterador2->getLeftNodo()!=NULL){
+                if(Iterador2->getLeftNodo()->getIndice()!=-1){
+                    file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
+                    "X"+to_string(Iterador2->getLeftNodo()->getX())+"_Y"+to_string(Iterador2->getLeftNodo()->getY())+";";
+                }
+                else{
+                    file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
+                    "Y"+to_string(Iterador->getLeftNodo()->getIndice())+";";
+                }
+            }
+            Iterador2= Iterador2->getRightNodo();
+        }
+    }
+
+    //SE ESCRIBEN LAS ETIQUETAS RANKSAME
 
 
 
