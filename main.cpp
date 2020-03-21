@@ -44,12 +44,19 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2);
 //GRAFICA COLA DE FICHAS
 void graphFichas();
 //VALIDA LA PALABRA CON EL DICCIONARIO
-bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY);
+bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY,int *ActualPuntaje);
 //INTERCAMBIA LAS FICHAS
 void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Ficha> *FichasJugador);
 //GRAFICA TABLERO DE JUEGO
 void graphTablero();
-
+//REGRESA EL MULTIPLICADOR DE UNA CASILLA
+int puntajeFicha(int x,int y);
+//GRAFICA LAS FICHAS DE UN JUGADOR
+void graphFichasJugador(DoubleLinkedList<Ficha> *TempFichas,Jugador *TempJugador);
+//GRAFICA EL PUNTAJE DE UN JUGADOR
+void graphPuntajesJugador(Jugador *TempJugador);
+//GRAFICA SCOREBOARD
+void graphScoreBoard();
 
 //TAMAÑO DEL TABLERO
 int dimensionTablero;
@@ -107,39 +114,35 @@ int main() {
     while(Control){
         ch = getch();
 
-        switch(ch){
+        switch(ch) {
             //OPCION 1 -- Abrir Archivo JSON
             case 49: {
 
-                string Ruta="";
-                string textJSON="";
+                string Ruta = "";
+                string textJSON = "";
 
                 mvwprintw(win, 18, 6, "Escriba Ruta de Archivo: ");
                 wrefresh(win);
                 bool option1Control = true;
 
-                while (option1Control)
-                {
+                while (option1Control) {
                     ch = getch();
                     if (ch >= 32 && ch <= 126) {
                         Ruta.push_back(ch);
                         wprintw(win, "%c", ch);
                         wrefresh(win);
-                    }
-                    else if(ch==127 && Ruta.length()>0){
+                    } else if (ch == 127 && Ruta.length() > 0) {
                         Ruta.pop_back();
                         clearWin(win);
                         showMenu(win);
                         mvwprintw(win, 18, 6, "Escriba Ruta de Archivo: ");
                         wprintw(win, Ruta.c_str());
                         wrefresh(win);
-                    }
-                    else if(ch==27 ){
+                    } else if (ch == 27) {
                         option1Control = false;
                         clearWin(win);
                         showMenu(win);
-                    }
-                    else if (ch == 10) {
+                    } else if (ch == 10) {
                         string aux = Ruta;
                         //SE VERIFICA QUE EL FICHERO EXISTA Y SE LEE
                         ifstream fichero;
@@ -148,10 +151,9 @@ int main() {
                             char letra;
                             fichero.get(letra);
 
-                            while(!fichero.eof())
-                            {
-                            textJSON.push_back(letra);
-                            fichero.get(letra);
+                            while (!fichero.eof()) {
+                                textJSON.push_back(letra);
+                                fichero.get(letra);
                             }
                             fichero.close();
                             readJSON(textJSON);
@@ -159,8 +161,7 @@ int main() {
                             option1Control = false;
                             clearWin(win);
                             showMenu(win);
-                        }
-                        else {
+                        } else {
                             clearWin(win);
                             showMenu(win);
                             mvwprintw(win, 20, 6, "NO EXISTE ARCHIVO EN LA RUTA INDICADA");
@@ -172,14 +173,15 @@ int main() {
                 }
             }
                 break;
-            //OPCION 2  -- Jugar
-            case 50:
+                //OPCION 2  -- Jugar
+            case 50:{
                 Jugador *jugador1;
                 Jugador *jugador2;
                 jugador1=showJugadores(win,"1");
                 jugador2=showJugadores(win,"2");
                 comenzarJuego(win,jugador1,jugador2);
                 break;
+            }
             //OPCION 3 -- Reportes
             case 51:
                 showMenuReportes(win);
@@ -319,11 +321,24 @@ void showMenuReportes(WINDOW * win){
             case 53:
                 graphPostOrden();
                 break;
-            //OPCION 6 -- PUNTAJES JUAGOR
+            //OPCION 6 -- PUNTAJES JUGADOR
             case 54:
+                graphPuntajesJugador(showJugadores(win,"."));
+                clearWin(win);
+                mvwprintw(win,2,5,"REPORTES");
+                mvwprintw(win,5,6,"1.Diccionario");
+                mvwprintw(win,6,6,"2.ABB de Jugadores");
+                mvwprintw(win,7,6,"3.Recorrido PreOrden del ABB de Jugadores");
+                mvwprintw(win,8,6,"4.Recorrido InOrden del ABB de Jugadores");
+                mvwprintw(win,9,6,"5.Recorrido PostOrden del ABB de Jugadores");
+                mvwprintw(win,10,6,"6.Historial de Puntajes de un Jugador");
+                mvwprintw(win,11,6,"7.ScoreBoard");
+                mvwprintw(win,12,6,"8.Salir");
+                wrefresh(win);
                 break;
             //OPCION 7 -- SCOREBOARD
             case 55:
+                graphScoreBoard();
                 break;
             //OPCION 8 -- SALIR
             case 56: {
@@ -338,6 +353,7 @@ void showMenuReportes(WINDOW * win){
                 break;
             }
         }
+
     }
 
 }
@@ -381,8 +397,9 @@ Jugador* showJugadores(WINDOW * win,string jugador){
 
 void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
 
-    int puntajeJugador1,puntajeJugador2;
-    dimensionTablero=20;
+    int puntajeJugador1=0;
+    int puntajeJugador2=0;
+    dimensionTablero=50;
     DoubleLinkedList<Ficha> *FichasJugador1 = new DoubleLinkedList<Ficha>();
     DoubleLinkedList<Ficha> *FichasJugador2 = new DoubleLinkedList<Ficha>() ;
     createFichas();
@@ -416,11 +433,33 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
 
     while(runtime){
 
+        //SI EL JUGADOR YA NO TIENE FICHAS
+        if(FichasActuales->getSize()==0){
+            for(int i=0;i<7;i++){
+                FichasActuales->addEnd(ColaFichas->pop());
+            }
+        }
+
         wmove(win,0,0); wclrtoeol(win);
         wprintw(win,"ES EL TURNO DE: ");
         wprintw(win,JugadorActual->getNombre().c_str());
+        wprintw(win,"     PUNTAJE: ");
+        wprintw(win,"%d",*PuntajeActual);
+        mvwprintw(win,15,0,"Ctrl+W para graficar fichas y Ctrl+Q para terminar partida");
+        mvwprintw(win,16,0,"Si no presiona cualquier tecla para comenzar tu turno");
+        wrefresh(win);
+        ch = getch();
+        if(ch==23){
+            graphFichas();
+            graphFichasJugador(FichasJugador1,Jugador1);
+            graphFichasJugador(FichasJugador2,Jugador2);
+        }
+        else if(ch==17){
+            break;
+        }
 
-
+        wmove(win,15,0); wclrtoeol(win);
+        wmove(win,16,0); wclrtoeol(win);
         int sizeFichas=FichasActuales->getSize();
         for(int i=0;i<sizeFichas;i++){
             mvwprintw(win,3,2+2*i,"%c",FichasActuales->getXNode(i).getLetra());
@@ -504,16 +543,29 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
 
         //SE SELECCIONAN FICHAS A PONER EN EL TABLERO
         wmove(win,11,0); wclrtoeol(win);
-        mvwprintw(win,10,0,"Selecciona en orden las fichas pulsando Enter , cuando termines presiona Ctrl+E");
-        mvwprintw(win,12,0,"Para intercambiar fichas presiona Ctrl+S");
+        mvwprintw(win,10,0,"Para intercambiar fichas presiona Ctrl+S sino presiona cualquier tecla");
         wrefresh(win);
 
         bool elegirFichas=true;
         int punteroLetra=0;
         DoubleLinkedList<Ficha> *TempFichas = new DoubleLinkedList<Ficha>();
 
-        while(elegirFichas){
+        ch=getch();
+        if(ch==19){
+            elegirFichas=false;
+            punteroLetra=0;
+            wmove(win,4,0); wclrtoeol(win);
+            wmove(win,5,0); wclrtoeol(win);
+            mvwprintw(win,4,2,"^");
+            mvwprintw(win,5,2,"|");
+            wrefresh(win);
+        }
+        else{
+            wmove(win,10,0); wclrtoeol(win);
+            wprintw(win,"Selecciona en orden las fichas pulsando Enter , cuando termines presiona Ctrl+E");
+        }
 
+        while(elegirFichas){
             ch = getch();
             if(ch==KEY_LEFT && punteroLetra>0){
                 punteroLetra--;
@@ -547,33 +599,25 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
                 punteroLetra=0;
             }
             else if(ch==5){
-                //SE TERMINA TURNO
                 elegirFichas=false;
                 wmove(win,4,0); wclrtoeol(win);
                 wmove(win,5,0); wclrtoeol(win);
             }
-            else if(ch==19){
-                elegirFichas=false;
-                punteroLetra=0;
-                wmove(win,4,0); wclrtoeol(win);
-                wmove(win,5,0); wclrtoeol(win);
-                mvwprintw(win,4,2,"^");
-                mvwprintw(win,5,2,"|");
-                wrefresh(win);
-            }
-
         }
 
         //SE VALIDA LA PALABRA FORMADA Y SU UBICACION EN EL TABLERO
         if(ch==5){
-            if(validarPalabra(TempFichas,direccion,coorX,coorY)){
+            if(validarPalabra(TempFichas,direccion,coorX,coorY,PuntajeActual)){
                 graphTablero();
             }
             else{
                 wmove(win,10,0); wclrtoeol(win);
                 mvwprintw(win,10,0,"Palabra no Valida, presione cualquier tecla.");
-                mvwprintw(win,16,0,"%d",TempFichas->getSize());
                 wrefresh(win);
+                //SE REGRESAN FICHAS
+                for(int i=0;i<TempFichas->getSize();i++){
+                    FichasActuales->addEnd(TempFichas->getXNode(i));
+                }
                 ch=getch();
             }
         }
@@ -647,6 +691,13 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
         clearWin(win);
     }
 
+    Jugador1->addpuntaje(puntajeJugador1);
+    Jugador2->addpuntaje(puntajeJugador2);
+
+    delete Tablero;
+    delete ColaFichas;
+    Tablero = new MatrizDispersa<Ficha>;
+    ColaFichas = new Queue<Ficha>();
 }
 
 //LECTURA DE JSON Y CREACION DE OBJETOS
@@ -864,22 +915,23 @@ void createFichas(){
 
 //FUNCIONES DEL JUEGO
 
-bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY){
+bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY,int *ActualPuntaje){
 
-    MatrizDispersa<Ficha> *TempTablero=new MatrizDispersa<Ficha>;
-    *TempTablero=*Tablero;
+    MatrizDispersa<Ficha> TempTablero;
+    TempTablero=*Tablero;
     string palabra="";
     int CantidadFichas = TempFichas->getSize();
     NodoOrtogonal<Ficha> *TempFicha = new NodoOrtogonal<Ficha>;
+    int TempPuntaje=*ActualPuntaje;
 
     //SE VALIDA QUE SE PUEDA INSERTAR EN EN TABLERO
     if(direccion==0){
         for(int i=0;i<CantidadFichas;i++){
-            TempFicha=TempTablero->getInXY(coorX,coorY);
-            if(coorY-1<dimensionTablero){
+            TempFicha=TempTablero.getInXY(coorX,coorY);
+            if(coorY<dimensionTablero){
                 if(TempFicha->getIndice()==-100){
-                    delete TempFicha;
-                    TempTablero->addInXY(coorX,coorY++,TempFichas->getXNode(i));
+                    TempTablero.addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    coorY++;
                     palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
                 }
                 else{
@@ -895,11 +947,12 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
     }
     else{
         for(int i=0;i<CantidadFichas;i++){
-            TempFicha=TempTablero->getInXY(coorX,coorY);
-            if((coorX-1)<dimensionTablero){
+            TempFicha=TempTablero.getInXY(coorX,coorY);
+            if((coorX)<dimensionTablero){
                 if(TempFicha->getIndice()== -100){
-                    delete TempFicha;
-                    TempTablero->addInXY(coorX++,coorY,TempFichas->getXNode(i));
+                    TempPuntaje=TempPuntaje+TempFichas->getXNode(i).getPuntos()*puntajeFicha(coorX,coorY);
+                    TempTablero.addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    coorX++;
                     palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
                     //AGREGAR CODIGO PARA AGARRAR UNA ULTIMA LETRA
                 }
@@ -915,24 +968,23 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
         }
     }
 
-    bool validacionPalabra=false;
-    for(int i=0;i<Diccionario->getSize();i++){
-        if(Diccionario->getXNode(i).compare(palabra)==0){
-            validacionPalabra=true;
-        }
-    }
+
+    //bool validacionPalabra=false;
+    //for(int i=0;i<Diccionario->getSize();i++){
+    //    if(Diccionario->getXNode(i).compare(palabra)==0){
+    //        validacionPalabra=true;
+    //        *ActualPuntaje=TempPuntaje;
+    //    }
+    //}
     //if(!validacionPalabra){
       //  return false;
     //}
-
-    *Tablero=*TempTablero;
-    delete TempTablero;
-    delete TempFicha;
+    *ActualPuntaje=TempPuntaje;
+    *Tablero=TempTablero;
 
     return true;
 
 }
-
 
 void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Ficha> *FichasJugador){
     int CantidadFichas = TempFichas->getSize();
@@ -941,6 +993,18 @@ void intercambiarFichas(DoubleLinkedList<Ficha> *TempFichas,DoubleLinkedList<Fic
         FichasJugador->addEnd(ColaFichas->pop());
     }
     delete TempFichas;
+}
+
+int puntajeFicha(int x,int y){
+
+    for(int i=0;i<CasillasList->getSize();i++){
+        if(CasillasList->getXNode(i).getX()==x){
+            if(CasillasList->getXNode(i).getY()==y){
+                return CasillasList->getXNode(i).getMultiplicador();
+            }
+        }
+    }
+    return 1;
 }
 
 //REPORTES
@@ -1006,7 +1070,7 @@ void graphDiccionario(){
     file.close();
     command = "dot -Tpng ./Diccionario" + to_string(reporteDiccionario) + ".dot -o Diccionario" + to_string(reporteDiccionario) + ".png >>/dev/null 2>>/dev/null";
     system(command.c_str());
-    command="open ./Diccionario" + to_string(reporteDiccionario) + ".png ";
+    command="open ./Diccionario" + to_string(reporteDiccionario) + ".png >>/dev/null 2>>/dev/null";
     system(command.c_str());
     reporteDiccionario++;
 
@@ -1040,7 +1104,7 @@ void graphArbol(){
         file.close();
         command = "dot -Tpng ./ABB" + to_string(reporteArbol) + ".dot -o ABB" + to_string(reporteArbol) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
-        command="open ./ABB" + to_string(reporteArbol) + ".png ";
+        command="open ./ABB" + to_string(reporteArbol) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
         reporteArbol++;
     }
@@ -1068,7 +1132,7 @@ void graphPreOrden(){
         file.close();
         command = "dot -Tpng ./ABBPreOrden" + to_string(reporteArbolPre) + ".dot -o ABBPreOrden" + to_string(reporteArbolPre) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
-        command="open ./ABBPreOrden" + to_string(reporteArbolPre) + ".png ";
+        command="open ./ABBPreOrden" + to_string(reporteArbolPre) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
         reporteArbolPre++;
     }
@@ -1078,7 +1142,6 @@ void graphInOrden(){
     Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
     string command = "";
     ofstream file;
-    //Jugador *TempJugador= new Qu
     ArbolJugadores->inOrden(ArbolJugadores->getRaiz(),AuxCola);
     int SizeCola = AuxCola->getSize();
     if(SizeCola>0){
@@ -1096,7 +1159,7 @@ void graphInOrden(){
         file.close();
         command = "dot -Tpng ./ABBInOrden" + to_string(reporteArbolIn) + ".dot -o ABBInOrden" + to_string(reporteArbolIn) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
-        command="open ./ABBInOrden" + to_string(reporteArbolIn) + ".png ";
+        command="open ./ABBInOrden" + to_string(reporteArbolIn) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
         reporteArbolIn++;
     }
@@ -1107,7 +1170,6 @@ void graphPostOrden(){
     Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
     string command = "";
     ofstream file;
-    //Jugador *TempJugador= new Qu
     ArbolJugadores->postOrden(ArbolJugadores->getRaiz(),AuxCola);
     int SizeCola = AuxCola->getSize();
     if(SizeCola>0){
@@ -1125,7 +1187,7 @@ void graphPostOrden(){
         file.close();
         command = "dot -Tpng ./ABBPostOrden" + to_string(reporteArbolPost) + ".dot -o ABBPostOrden" + to_string(reporteArbolPost) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
-        command="open /.ABBPostOrden" + to_string(reporteArbolPost) + ".png ";
+        command="open /.ABBPostOrden" + to_string(reporteArbolPost) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
         reporteArbolPost++;
     }
@@ -1151,10 +1213,48 @@ void graphFichas(){
         file.close();
         command = "dot -Tpng ./Fichas" + to_string(reporteFichas) + ".dot -o Fichas" + to_string(reporteFichas) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
-        command="open ./Fichas" + to_string(reporteFichas) + ".png ";
+        command="open ./Fichas" + to_string(reporteFichas) + ".png >>/dev/null 2>>/dev/null";
         system(command.c_str());
         reporteFichas++;
     }
+}
+
+void graphFichasJugador(DoubleLinkedList<Ficha> *TempFichas,Jugador *TempJugador){
+    string command = "";
+    ofstream file;
+
+    int SizeCola = TempFichas->getSize();
+    if(SizeCola>0){
+        file.open("./Fichas" + TempJugador->getNombre() + ".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        for(int i=0;i<SizeCola;i++){
+            file<<to_string(i)+"[label = \""+TempFichas->getXNode(i).getLetra()+"\" width = 1.5 ];"<<endl;
+        }
+        for(int i=0;i<SizeCola;i++){
+            if(i+1<SizeCola){
+                file<<to_string(i)+"->"+to_string(i+1)+";"<<endl;
+            }
+            if(i-1>=0){
+                file<<to_string(i)+"->"+to_string(i-1)+";"<<endl;
+            }
+        }
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./Fichas" + TempJugador->getNombre() + ".dot -o Fichas" + TempJugador->getNombre() + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open /.Fichas" + TempJugador->getNombre() + ".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+    }
+}
+
+void graphPuntajesJugador(Jugador *TempJugador){
+
+}
+
+void graphScoreBoard(){
+
 }
 
 void graphTablero(){
@@ -1180,8 +1280,8 @@ void graphTablero(){
         Iterador=Iterador->getDownNodo();
         if(Iterador!=NULL){
             cantY++;
-            file<<"Y"+to_string(Iterador->getUpNodo()->getIndice())+"->Y"+to_string(Iterador->getIndice())+";";
-            file<<"Y"+to_string(Iterador->getIndice())+"->Y"+to_string(Iterador->getUpNodo()->getIndice())+";";
+            file<<"Y"+to_string(Iterador->getUpNodo()->getIndice())+"->Y"+to_string(Iterador->getIndice())+";"<<endl;
+            file<<"Y"+to_string(Iterador->getIndice())+"->Y"+to_string(Iterador->getUpNodo()->getIndice())+";"<<endl;
         }
     }
     //INDICES Y ENLACES DE X
@@ -1191,76 +1291,96 @@ void graphTablero(){
         Iterador=Iterador->getRightNodo();
         if(Iterador!=NULL){
             cantX++;
-            file<<"X"+to_string(Iterador->getLeftNodo()->getIndice())+"->X"+to_string(Iterador->getIndice())+";";
-            file<<"X"+to_string(Iterador->getIndice())+"->X"+to_string(Iterador->getLeftNodo()->getIndice())+";";
+            file<<"X"+to_string(Iterador->getLeftNodo()->getIndice())+"->X"+to_string(Iterador->getIndice())+";"<<endl;
+            file<<"X"+to_string(Iterador->getIndice())+"->X"+to_string(Iterador->getLeftNodo()->getIndice())+";"<<endl;
         }
     }
+
     //ENLACES Y ALINEACION CON MAIN
     if(cantX>0||cantY>0) {
-        file << "Main->X0;" << endl;
-        file << "Main->Y0;" << endl;
-        file << "X0->Main;" << endl;
-        file << "Y0->Main;" << endl;
+        Iterador=Tablero->getHead()->getRightNodo();
+        file << "Main->X"+to_string(Iterador->getIndice())+";"<< endl;
+        file << "X"+to_string(Iterador->getIndice())+"->Main;"<< endl;
+        Iterador=Tablero->getHead()->getDownNodo();
+        file << "Main->Y"+to_string(Iterador->getIndice())+";"<< endl;
+        file << "Y"+to_string(Iterador->getIndice())+"->Main;"<< endl;
+        Iterador=Tablero->getHead();
         file <<"{ rank = same; Main; ";
         for(int i=0;i<=cantX;i++){
-            file<<"X"+to_string(i)+"; ";
+            Iterador=Iterador->getRightNodo();
+            file<<"X"+to_string(Iterador->getIndice())+"; ";
         }
         file <<"}"<<endl;
     }
 
     //SE ESCRIBEN TODOS LOS NODOS DE LAS FICHAS
-    Iterador=Tablero->getHead();
-    for(int i =0;i<=cantY;i++){
-        Iterador=Iterador->getDownNodo();
+    Iterador=Tablero->getHead()->getDownNodo();
+    while(Iterador!=NULL){
         Iterador2 = Iterador->getRightNodo();
         while(Iterador2!=NULL){
             TempFicha=Iterador2->getNodoValue();
             file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+
-            "[label = \""+TempFicha.getLetra()+"\" width = 1.5 , group = "+to_string(Iterador2->getX()+2)+" ];"<<endl;
+                  "[label = \""+TempFicha.getLetra()+"\" width = 1.5 , group = "+to_string(Iterador2->getX()+2)+" ];"<<endl;
             Iterador2= Iterador2->getRightNodo();
         }
+        Iterador=Iterador->getDownNodo();
     }
 
     //SE CREAN TODOS LOS ENLACES DE LAS FICHAS
-    Iterador=Tablero->getHead();
-    for(int i =0;i<=cantY;i++){
-        Iterador=Iterador->getDownNodo();
+    Iterador=Tablero->getHead()->getDownNodo();
+    while(Iterador!=NULL){
         Iterador2= Iterador->getRightNodo();
         while(Iterador2!=NULL){
             if(Iterador2->getUpNodo()!=NULL){
-                if(Iterador2->getUpNodo()->getIndice()!=-1){
-
+                if(Iterador2->getUpNodo()->getIndice()==-1){
                     file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
-                    "X"+to_string(Iterador2->getUpNodo()->getX())+"_Y"+to_string(Iterador2->getUpNodo()->getY())+";";
+                    "X"+to_string(Iterador2->getUpNodo()->getX())+"_Y"+to_string(Iterador2->getUpNodo()->getY())+";"<<endl;
                 }
                 else{
+                    file<<"X"+to_string(Iterador2->getUpNodo()->getIndice())+
+                    "->X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+";"<<endl;
                     file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
-                    "X"+to_string(Iterador->getUpNodo()->getIndice())+";";
+                    "X"+to_string(Iterador2->getUpNodo()->getIndice())+";"<<endl;
                 }
             }
             if(Iterador2->getRightNodo()!=NULL){
                 file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
-                "X"+to_string(Iterador2->getRightNodo()->getX())+"_Y"+to_string(Iterador2->getRightNodo()->getY())+";";
+                "X"+to_string(Iterador2->getRightNodo()->getX())+"_Y"+to_string(Iterador2->getRightNodo()->getY())+";"<<endl;;
             }
             if(Iterador2->getDownNodo()!=NULL){
                 file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
-                "X"+to_string(Iterador2->getDownNodo()->getX())+"_Y"+to_string(Iterador2->getDownNodo()->getY())+";";
+                "X"+to_string(Iterador2->getDownNodo()->getX())+"_Y"+to_string(Iterador2->getDownNodo()->getY())+";"<<endl;;
             }
             if(Iterador2->getLeftNodo()!=NULL){
-                if(Iterador2->getLeftNodo()->getIndice()!=-1){
+                if(Iterador2->getLeftNodo()->getIndice()==-1){
                     file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
-                    "X"+to_string(Iterador2->getLeftNodo()->getX())+"_Y"+to_string(Iterador2->getLeftNodo()->getY())+";";
+                    "X"+to_string(Iterador2->getLeftNodo()->getX())+"_Y"+to_string(Iterador2->getLeftNodo()->getY())+";"<<endl;;
                 }
                 else{
+                    file<<"Y"+to_string(Iterador2->getLeftNodo()->getIndice())+
+                    "->X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+";"<<endl;
                     file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"->"+
-                    "Y"+to_string(Iterador->getLeftNodo()->getIndice())+";";
+                    "Y"+to_string(Iterador2->getLeftNodo()->getIndice())+";"<<endl;;
                 }
             }
             Iterador2= Iterador2->getRightNodo();
         }
+        Iterador=Iterador->getDownNodo();
     }
 
     //SE ESCRIBEN LAS ETIQUETAS RANKSAME
+    Iterador=Tablero->getHead();
+    for(int i =0;i<=cantY;i++){
+        Iterador=Iterador->getDownNodo();
+        Iterador2= Iterador->getRightNodo();
+        file <<"{ rank = same; Y"+to_string(Iterador->getIndice())+";";
+        while(Iterador2!=NULL){
+            file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+"; ";
+            Iterador2= Iterador2->getRightNodo();
+        }
+        file <<"}"<<endl;
+    }
+
 
 
 
@@ -1268,10 +1388,12 @@ void graphTablero(){
     file.close();
     command = "dot -Tpng ./Tablero.dot -o Tablero.png >>/dev/null 2>>/dev/null";
     system(command.c_str());
-    command="open ./Tablero.png ";
+    command="open ./Tablero.png >>/dev/null 2>>/dev/null";
     system(command.c_str());
     reporteFichas++;
 
 
 }
+
+
 
