@@ -435,9 +435,18 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
 
     while(runtime){
 
-        //SI EL JUGADOR YA NO TIENE FICHAS
-        if(FichasActuales->getSize()==0){
-            for(int i=0;i<7;i++){
+        //SI EL JUGADOR TIENE POCAS FICHAS Y HAY EN LA COLA
+        if(FichasActuales->getSize()<7 && ColaFichas->getSize()>=7){
+            for(int i=FichasActuales->getSize();i<=7;i++){
+                FichasActuales->addEnd(ColaFichas->pop());
+            }
+        }
+        else if(ColaFichas->getSize()==0){
+            //SE TERMINA JUEGO
+            break;
+        }
+        else{
+            for(int i=FichasActuales->getSize();i<ColaFichas->getSize();i++){
                 FichasActuales->addEnd(ColaFichas->pop());
             }
         }
@@ -565,6 +574,7 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
         else{
             wmove(win,10,0); wclrtoeol(win);
             wprintw(win,"Selecciona en orden las fichas pulsando Enter , cuando termines presiona Ctrl+E");
+            wrefresh(win);
         }
 
         while(elegirFichas){
@@ -1394,8 +1404,20 @@ void graphTablero(){
         Iterador2 = Iterador->getRightNodo();
         while(Iterador2!=NULL){
             TempFicha=Iterador2->getNodoValue();
-            file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+
-                  "[label = \""+TempFicha.getLetra()+"\" width = 1.5 , group = "+to_string(Iterador2->getX()+2)+" ];"<<endl;
+            if(puntajeFicha(Iterador2->getX(),Iterador2->getY())==3){
+                file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+
+                "[label = \""+TempFicha.getLetra()+"\" width = 1.5 ,style = filled, fillcolor = dodgerblue, group = "+
+                to_string(Iterador2->getX()+2)+" ];"<<endl;
+            }
+            else if(puntajeFicha(Iterador2->getX(),Iterador2->getY())==2){
+                file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+
+                "[label = \""+TempFicha.getLetra()+"\" width = 1.5 ,style = filled, fillcolor = orange, group = "+
+                to_string(Iterador2->getX()+2)+" ];"<<endl;
+            }
+            else{
+                file<<"X"+to_string(Iterador2->getX())+"_Y"+to_string(Iterador2->getY())+
+                "[label = \""+TempFicha.getLetra()+"\" width = 1.5 , group = "+to_string(Iterador2->getX()+2)+" ];"<<endl;
+            }
             Iterador2= Iterador2->getRightNodo();
         }
         Iterador=Iterador->getDownNodo();
