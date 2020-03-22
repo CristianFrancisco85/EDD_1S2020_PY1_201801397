@@ -180,6 +180,8 @@ int main() {
                 jugador1=showJugadores(win,"1");
                 jugador2=showJugadores(win,"2");
                 comenzarJuego(win,jugador1,jugador2);
+                clearWin(win);
+                showMenu(win);
                 break;
             }
             //OPCION 3 -- Reportes
@@ -1250,10 +1252,83 @@ void graphFichasJugador(DoubleLinkedList<Ficha> *TempFichas,Jugador *TempJugador
 }
 
 void graphPuntajesJugador(Jugador *TempJugador){
-
+    string command = "";
+    ofstream file;
+    int SizeCola = TempJugador->getPuntajes()->getSize();
+    if(SizeCola>0){
+        file.open("./Puntajes"+ TempJugador->getNombre()+".dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        for(int i=0;i<SizeCola;i++){
+            file<<to_string(i)+"[label = \""+to_string(TempJugador->getPuntajes()->getXNode(i))+"\" width = 1.5 ];"<<endl;
+        }
+        for(int i=0;i<SizeCola;i++){
+            if(i+1<SizeCola){
+                file<<to_string(i)+"->"+to_string(i+1)+";"<<endl;
+            }
+        }
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./Puntajes"+TempJugador->getNombre()+".dot -o Puntajes"+TempJugador->getNombre()+".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open /.Puntajes"+TempJugador->getNombre()+".png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+    }
 }
 
 void graphScoreBoard(){
+    Queue<Jugador*> *AuxCola = new Queue<Jugador*>();
+    ArbolJugadores->preOrden(ArbolJugadores->getRaiz(),AuxCola);
+    DoubleLinkedList<Jugador> *puntajes=new DoubleLinkedList<Jugador>();
+    string command = "";
+    ofstream file;
+    int SizeCola = AuxCola->getSize();
+    Jugador *AuxJugador;
+    for(int i=0; i<SizeCola;i++){
+        AuxJugador=AuxCola->pop();
+        if(AuxJugador->getPuntajes()->getSize()>0){
+            if(puntajes->getSize()==0){
+                puntajes->addEnd(*AuxJugador);
+            }
+            else{
+                int Size=puntajes->getSize();
+                for(int i=0; i<Size;i++){
+                    if(AuxJugador->getPuntajes()->getFirst()>puntajes->getXNode(i).getPuntajes()->getFirst()){
+                        puntajes->addX(*AuxJugador,i);
+                        break;
+                    }
+                    else if(i==puntajes->getSize()-1){
+                        puntajes->addEnd(*AuxJugador);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    SizeCola = puntajes->getSize();
+    if(SizeCola>0){
+        file.open("./ScoreBoard.dot", fstream::in | fstream::out | fstream::trunc);
+        file << "digraph {";
+        file << "node [shape=box];"<<endl;
+        file << "rankdir=LR;"<<endl;
+        for(int i=0;i<SizeCola;i++){
+            file<<to_string(i)+"[label = \""+puntajes->getXNode(i).getNombre()+","+
+            to_string(puntajes->getXNode(i).getPuntajes()->getFirst())+"\" width = 1.5 ];"<<endl;
+        }
+        for(int i=0;i<SizeCola;i++){
+            if(i+1<SizeCola){
+                file<<to_string(i)+"->"+to_string(i+1)+";"<<endl;
+            }
+        }
+        file << "}";
+        file.close();
+        command = "dot -Tpng ./ScoreBoard.dot -o ScoreBoard.png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+        command="open /.ScoreBoard.png >>/dev/null 2>>/dev/null";
+        system(command.c_str());
+    }
 
 }
 
@@ -1390,9 +1465,6 @@ void graphTablero(){
     system(command.c_str());
     command="open ./Tablero.png >>/dev/null 2>>/dev/null";
     system(command.c_str());
-    reporteFichas++;
-
-
 }
 
 

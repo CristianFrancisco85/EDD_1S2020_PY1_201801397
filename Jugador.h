@@ -43,12 +43,15 @@ void Jugador::addpuntaje(int arg1) {
         puntajes->addBegin(arg1);
     }
     else{
-        for(int i=0; i<puntajes->getSize();i++){
+        int SizeLista=puntajes->getSize();
+        for(int i=0; i<SizeLista;i++){
             if(arg1>puntajes->getXNode(i)){
                 puntajes->addX(arg1,i);
+                break;
             }
             else if(i==puntajes->getSize()-1){
                 puntajes->addEnd(arg1);
+                break;
             }
         }
     }
