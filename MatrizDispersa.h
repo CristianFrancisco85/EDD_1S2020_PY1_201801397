@@ -10,6 +10,7 @@ public:
     MatrizDispersa();
     void addInXY(int x,int y,T Value);
     void deleteInXY(int x,int y);
+    void optimize();
     NodoOrtogonal<T>* getInXY(int x,int y);
     NodoOrtogonal<T>* getHead();
 
@@ -178,6 +179,7 @@ template <class T>
 void MatrizDispersa<T>::deleteInXY(int x, int y) {
 
     this->Iterador=getInXY(x,y);
+
     if(this->Iterador->getDownNodo()!=NULL){
         this->Iterador->getUpNodo()->setDownNodo(this->Iterador->getDownNodo());
         this->Iterador->getDownNodo()->setUpNodo(this->Iterador->getUpNodo());
@@ -196,7 +198,37 @@ void MatrizDispersa<T>::deleteInXY(int x, int y) {
 
     delete this->Iterador;
 
+
 }
+
+template <class T>
+void MatrizDispersa<T>::optimize() {
+
+    this->Iterador=this->Head->getRightNodo();
+    while(this->Iterador!=NULL){
+        if(this->Iterador->getDownNodo()==NULL){
+            this->Iterador->getLeftNodo()->setRightNodo(this->Iterador->getRightNodo());
+            if(this->Iterador->getRightNodo()!=NULL) {
+                this->Iterador->getRightNodo()->setLeftNodo(this->Iterador->getLeftNodo());
+            }
+        }
+        this->Iterador=this->Iterador->getRightNodo();
+    }
+
+    this->Iterador=this->Head->getDownNodo();
+    while(this->Iterador!=NULL){
+        if(this->Iterador->getRightNodo()==NULL){
+            this->Iterador->getUpNodo()->setDownNodo(this->Iterador->getDownNodo());
+            if(this->Iterador->getDownNodo()!=NULL) {
+                this->Iterador->getDownNodo()->setUpNodo(this->Iterador->getUpNodo());
+            }
+        }
+        this->Iterador=this->Iterador->getDownNodo();
+    }
+
+}
+
+
 
 template <class T>
 NodoOrtogonal<T>* MatrizDispersa<T>::getInXY(int x, int y) {

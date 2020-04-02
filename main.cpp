@@ -436,8 +436,8 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
     while(runtime){
 
         //SI EL JUGADOR TIENE POCAS FICHAS Y HAY EN LA COLA
-        if(FichasActuales->getSize()<7 && ColaFichas->getSize()>=7){
-            for(int i=FichasActuales->getSize();i<=7;i++){
+        if(FichasActuales->getSize()<=7 && ColaFichas->getSize()>=7){
+            for(int i=FichasActuales->getSize();i<7;i++){
                 FichasActuales->addEnd(ColaFichas->pop());
             }
         }
@@ -621,15 +621,20 @@ void comenzarJuego(WINDOW * win,Jugador *Jugador1 , Jugador *Jugador2){
         if(ch==5){
             if(validarPalabra(TempFichas,direccion,coorX,coorY,PuntajeActual)){
                 graphTablero();
+                delete TempFichas;
+                TempFichas = new DoubleLinkedList<Ficha>();
             }
             else{
-                wmove(win,10,0); wclrtoeol(win);
-                mvwprintw(win,10,0,"Palabra no Valida, presione cualquier tecla.");
-                wrefresh(win);
+                graphTablero();
                 //SE REGRESAN FICHAS
                 for(int i=0;i<TempFichas->getSize();i++){
                     FichasActuales->addEnd(TempFichas->getXNode(i));
                 }
+                delete TempFichas;
+                TempFichas = new DoubleLinkedList<Ficha>();
+                wmove(win,10,0); wclrtoeol(win);
+                mvwprintw(win,10,0,"Palabra no Valida, presione cualquier tecla.");
+                wrefresh(win);
                 ch=getch();
             }
         }
@@ -929,12 +934,12 @@ void createFichas(){
 
 bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,int coorY,int *ActualPuntaje){
 
-    MatrizDispersa<Ficha> TempTablero;
-    TempTablero=*Tablero;
-    string palabra="";
+    MatrizDispersa<Ficha> TempTablero = *Tablero;
+    string *palabra=new string();
     int CantidadFichas = TempFichas->getSize();
-    NodoOrtogonal<Ficha> *TempFicha = new NodoOrtogonal<Ficha>;
+    NodoOrtogonal<Ficha> *TempFicha;
     int TempPuntaje=*ActualPuntaje;
+    DoubleLinkedList<int> Coordenadas;
 
     //SE VALIDA QUE SE PUEDA INSERTAR EN EN TABLERO
     if(direccion==0){
@@ -942,12 +947,16 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
             TempFicha=TempTablero.getInXY(coorX,coorY);
             if(coorY<dimensionTablero){
                 if(TempFicha->getIndice()==-100){
+                    TempPuntaje=TempPuntaje+TempFichas->getXNode(i).getPuntos()*puntajeFicha(coorX,coorY);
                     TempTablero.addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    Coordenadas.addEnd(coorX);
+                    Coordenadas.addEnd(coorY);
                     coorY++;
-                    palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
+                    palabra->push_back(TempFichas->getXNode(i).getLetra());
                 }
                 else{
-                    palabra=palabra.append(to_string(TempFicha->getNodoValue().getLetra()));
+                    TempPuntaje=TempPuntaje+TempFicha->getNodoValue().getPuntos()*puntajeFicha(coorX,coorY);
+                    palabra->push_back(TempFicha->getNodoValue().getLetra());
                     coorY++;
                     i--;
                 }
@@ -964,12 +973,15 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
                 if(TempFicha->getIndice()== -100){
                     TempPuntaje=TempPuntaje+TempFichas->getXNode(i).getPuntos()*puntajeFicha(coorX,coorY);
                     TempTablero.addInXY(coorX,coorY,TempFichas->getXNode(i));
+                    Coordenadas.addEnd(coorX);
+                    Coordenadas.addEnd(coorY);
                     coorX++;
-                    palabra=palabra.append(to_string(TempFichas->getXNode(i).getLetra()));
+                    palabra->push_back(TempFichas->getXNode(i).getLetra());
                     //AGREGAR CODIGO PARA AGARRAR UNA ULTIMA LETRA
                 }
                 else{
-                    palabra=palabra.append(to_string(TempFicha->getNodoValue().getLetra()));
+                    TempPuntaje=TempPuntaje+TempFicha->getNodoValue().getPuntos()*puntajeFicha(coorX,coorY);
+                    palabra->push_back(TempFicha->getNodoValue().getLetra());
                     coorX++;
                     i--;
                 }
@@ -980,21 +992,26 @@ bool validarPalabra(DoubleLinkedList<Ficha> *TempFichas,int direccion,int coorX,
         }
     }
 
+    for(int i=0;i<Diccionario->getSize();i++){
+        if(Diccionario->getXNode(i).compare(*palabra)==0){
+            *ActualPuntaje=TempPuntaje;
+            *Tablero=TempTablero;
+            palabra->clear();
+            delete palabra;
+            return true;
+        }
+    }
 
-    //bool validacionPalabra=false;
-    //for(int i=0;i<Diccionario->getSize();i++){
-    //    if(Diccionario->getXNode(i).compare(palabra)==0){
-    //        validacionPalabra=true;
-    //        *ActualPuntaje=TempPuntaje;
-    //    }
-    //}
-    //if(!validacionPalabra){
-      //  return false;
-    //}
-    *ActualPuntaje=TempPuntaje;
-    *Tablero=TempTablero;
+    for(int i=0;i<Coordenadas.getSize();i++){
+        TempTablero.deleteInXY(Coordenadas.getXNode(i),Coordenadas.getXNode(i+1));
+        i++;
+    }
+    //TempTablero.optimize();
 
-    return true;
+    palabra->clear();
+    delete palabra;
+    return false;
+
 
 }
 
